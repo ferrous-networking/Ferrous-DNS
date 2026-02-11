@@ -22,7 +22,7 @@ ferrous-dns-api = { path = "crates/api" }
 
 tokio = { version = "1", features = ["full"] }
 fastrand = "2.0"
-lru = "0.12"
+lru = "0.16"
 ahash = "0.8"
 bloomfilter = "1.0"
 hostname = "0.4"
