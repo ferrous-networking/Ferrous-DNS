@@ -785,9 +785,19 @@
                 return macRegex.test(mac);
             },
             isValidIP(ip) {
-                const ipv4 = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/;
+                // IPv4: Split by dots and validate each octet
+                const parts = ip.split('.');
+                if (parts.length === 4) {
+                    const validIPv4 = parts.every(part => {
+                        const num = parseInt(part, 10);
+                        return part === num.toString() && num >= 0 && num <= 255;
+                    });
+                    if (validIPv4) return true;
+                }
+
+                // IPv6 validation (keep existing)
                 const ipv6 = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|::)$/;
-                return ipv4.test(ip) || ipv6.test(ip);
+                return ipv6.test(ip);
             },
             isValidCIDR(cidr) {
                 const parts = cidr.split('/');
@@ -868,34 +878,22 @@
                 this.filteredKnownClients = [];
             },
             async submitUnifiedForm() {
-                console.log('=== submitUnifiedForm CALLED ===');
-                console.log('detectedType:', this.unifiedForm.detectedType);
-                console.log('validationError:', this.unifiedForm.validationError);
-                console.log('address:', this.unifiedForm.address);
-
                 if (!this.unifiedForm.detectedType) {
-                    console.log('BLOCKED: No detected type');
                     alert('Please enter a valid IP address, CIDR subnet, or MAC address');
                     return;
                 }
                 if (this.unifiedForm.detectedType === 'mac') {
-                    console.log('BLOCKED: MAC detected');
                     alert('MAC address detected! Please also enter the IP address, or select an existing client.');
                     return;
                 }
                 if (this.unifiedForm.validationError) {
-                    console.log('BLOCKED: Validation error');
                     alert(this.unifiedForm.validationError);
                     return;
                 }
-
-                console.log('Proceeding to submit...');
                 try {
                     if (this.unifiedForm.detectedType === 'subnet') {
-                        console.log('Calling submitSubnet()');
                         await this.submitSubnet();
                     } else {
-                        console.log('Calling submitClient()');
                         await this.submitClient();
                     }
                 } catch (e) {
