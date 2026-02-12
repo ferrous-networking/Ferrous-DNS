@@ -21,6 +21,7 @@
             --text-tertiary: #9CA3AF;
             --border-color: #E5E7EB
         }
+
         .dark {
             --bg-primary: #0F172A;
             --bg-secondary: #1E293B;
@@ -30,6 +31,7 @@
             --text-tertiary: #94A3B8;
             --border-color: #334155
         }
+
         body {
             background: var(--bg-primary);
             color: var(--text-primary);
@@ -37,6 +39,7 @@
             margin: 0;
             font-family: system-ui, -apple-system, sans-serif
         }
+
         .sidebar {
             position: fixed;
             left: 0;
@@ -49,149 +52,209 @@
             flex-direction: column;
             overflow-y: auto
         }
-        .nav-section {
-            padding: 8px 16px
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 24px 16px 16px
         }
-        .nav-section-title {
-            font-size: 11px;
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 8px
+        }
+
+        .logo-text h1 {
+            font-size: 20px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-tertiary);
-            margin-bottom: 8px;
-            margin-top: 16px
+            color: var(--text-primary);
+            margin: 0
         }
+
+        .logo-subtitle {
+            font-size: 11px;
+            color: var(--text-tertiary)
+        }
+
+        .status-box {
+            margin: 0 16px 16px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-success);
+            animation: pulse 2s infinite
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 var(--color-success)
+            }
+            50% {
+                box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2)
+            }
+        }
+
+        .nav-section {
+            margin-bottom: 24px
+        }
+
+        .nav-section-title {
+            padding: 8px 16px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            text-transform: uppercase
+        }
+
         .nav-item {
             display: flex;
             align-items: center;
-            padding: 10px 12px;
-            border-radius: 8px;
+            padding: 10px 28px;
             color: var(--text-secondary);
             text-decoration: none;
-            transition: all 0.15s;
-            font-size: 14px;
-            margin-bottom: 2px
+            transition: all .15s;
+            font-size: 14px
         }
+
         .nav-item:hover {
             background: var(--bg-tertiary);
             color: var(--text-primary)
         }
+
         .nav-item.active {
             background: var(--bg-tertiary);
             color: var(--color-primary);
             font-weight: 600;
             border-left: 3px solid var(--color-primary)
         }
+
         .nav-icon {
             margin-right: 12px;
             width: 18px;
             height: 18px
         }
-        .table {
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid var(--border-color)
+        }
+
+        .theme-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             width: 100%;
-            border-collapse: collapse;
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            overflow: hidden
-        }
-        .table th {
-            background: var(--bg-tertiary);
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 13px;
+            padding: 10px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
             color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em
-        }
-        .table td {
-            padding: 14px 16px;
-            border-top: 1px solid var(--border-color);
+            transition: all .15s;
             font-size: 14px
         }
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
+
+        .theme-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary)
+        }
+
+        .card {
+            background: var(--bg-secondary);
             border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-left: 8px
+            border: 1px solid var(--border-color)
         }
-        .badge-success {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10B981
-        }
-        .badge-inactive {
-            background: rgba(156, 163, 175, 0.1);
-            color: #9CA3AF
-        }
-        .badge-default {
-            background: rgba(59, 130, 246, 0.1);
-            color: #3B82F6
-        }
+
         .btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 8px;
-            border: none;
-            cursor: pointer;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
             transition: all 0.15s
         }
+
         .btn-primary {
             background: var(--color-primary);
             color: white
         }
+
         .btn-primary:hover {
-            opacity: 0.9
+            background: #2563EB
         }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary)
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color)
+        }
+
+        .btn-danger {
+            background: var(--color-error);
+            color: white
+        }
+
+        .btn-danger:hover {
+            background: #DC2626
+        }
+
         .btn-icon {
-            background: transparent;
+            padding: 8px;
+            border-radius: 8px;
+            background: none;
             border: none;
             cursor: pointer;
-            padding: 8px;
-            border-radius: 6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary)
+            color: var(--text-secondary);
+            transition: all 0.15s
         }
+
         .btn-icon:hover {
             background: var(--bg-tertiary);
             color: var(--text-primary)
         }
+
         .btn-icon:disabled {
-            opacity: 0.4;
+            opacity: 0.5;
             cursor: not-allowed
         }
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000
-        }
-        .modal-content {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 24px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1)
-        }
-        .form-group {
-            margin-bottom: 16px
-        }
-        .form-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--text-primary)
-        }
-        .form-input {
+
+        .input {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid var(--border-color);
@@ -200,7 +263,13 @@
             color: var(--text-primary);
             font-size: 14px
         }
-        .form-textarea {
+
+        .input:focus {
+            outline: none;
+            border-color: var(--color-primary)
+        }
+
+        .textarea {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid var(--border-color);
@@ -211,252 +280,393 @@
             resize: vertical;
             min-height: 80px
         }
+
+        .textarea:focus {
+            outline: none;
+            border-color: var(--color-primary)
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success)
+        }
+
+        .badge-inactive {
+            background: rgba(107, 114, 128, 0.1);
+            color: var(--text-secondary)
+        }
+
+        .badge-default {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-primary)
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        .table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color)
+        }
+
+        .table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color)
+        }
+
+        .table tbody tr:hover {
+            background: var(--bg-tertiary)
+        }
+
+        .form-group {
+            margin-bottom: 16px
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary)
+        }
+
+        .add-btn-fixed {
+            position: fixed;
+            bottom: 24px;
+            left: 284px;
+            padding: 12px 24px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            z-index: 100
+        }
+
+        .add-btn-fixed:hover {
+            background: #2563EB;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4)
+        }
     </style>
 </head>
 <body x-data="app()" x-init="init()">
-    <aside class="sidebar">
-        <div style="padding:24px 16px;border-bottom:1px solid var(--border-color)">
-            <h1 style="font-size:20px;font-weight:700;margin:0">FERROUS DNS</h1>
+<aside class="sidebar">
+    <div class="logo-container">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        <div class="logo-text"><h1>Ferrous DNS</h1><span class="logo-subtitle">High-Performance DNS</span></div>
+    </div>
+    <div class="status-box">
+        <div class="status-header"><i data-lucide="activity" style="width:16px;height:16px"></i><span>Status</span>
         </div>
-        <nav style="flex:1;padding:16px 0">
-            <div class="nav-section">
-                <div class="nav-section-title">MAIN</div>
-                <a href="/dashboard.html" class="nav-item">
-                    <i data-lucide="layout-dashboard" class="nav-icon"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/queries.html" class="nav-item">
-                    <i data-lucide="file-text" class="nav-icon"></i>
-                    <span>Query Log</span>
-                </a>
-            </div>
-            <div class="nav-section">
-                <div class="nav-section-title">NETWORK MANAGEMENT</div>
-                <a href="/clients.html" class="nav-item">
-                    <i data-lucide="users" class="nav-icon"></i>
-                    <span>Clients</span>
-                </a>
-                <a href="/groups.html" class="nav-item active">
-                    <i data-lucide="layers" class="nav-icon"></i>
-                    <span>Groups</span>
-                </a>
-            </div>
-            <div class="nav-section">
-                <div class="nav-section-title">DNS CONTROL</div>
-                <a href="/local-dns-settings.html" class="nav-item">
-                    <i data-lucide="server" class="nav-icon"></i>
-                    <span>Local DNS</span>
-                </a>
-                <a href="/settings.html" class="nav-item">
-                    <i data-lucide="settings" class="nav-icon"></i>
-                    <span>Settings</span>
-                </a>
-            </div>
-        </nav>
-        <div style="padding:16px;border-top:1px solid var(--border-color)">
-            <button @click="toggleTheme()" class="btn-icon" style="width:100%">
-                <i data-lucide="sun" x-show="theme==='light'" style="width:16px;height:16px"></i>
-                <i data-lucide="moon" x-show="theme==='dark'" style="width:16px;height:16px"></i>
-                <span style="margin-left:8px">Theme</span>
-            </button>
+        <div class="status-item">
+            <div class="status-indicator"></div>
+            <span>Active</span>
         </div>
-    </aside>
+    </div>
+    <nav style="flex:1;padding:16px 0">
+        <div class="nav-section">
+            <div class="nav-section-title">MAIN</div>
+            <a href="/dashboard.html" class="nav-item"><i data-lucide="layout-dashboard"
+                                                          class="nav-icon"></i><span>Dashboard</span></a>
+            <a href="/queries.html" class="nav-item"><i data-lucide="file-text"
+                                                        class="nav-icon"></i><span>Query Log</span></a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">NETWORK MANAGEMENT</div>
+            <a href="/clients.html" class="nav-item">
+                <i data-lucide="users" class="nav-icon"></i>
+                <span>Clients</span>
+            </a>
+            <a href="/groups.html" class="nav-item active">
+                <i data-lucide="layers" class="nav-icon"></i>
+                <span>Groups</span>
+            </a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">DNS CONTROL</div>
+            <a href="/local-dns-settings.html" class="nav-item"><i data-lucide="server"
+                                                                    class="nav-icon"></i><span>Local DNS</span></a>
+            <a href="/settings.html" class="nav-item"><i data-lucide="settings"
+                                                         class="nav-icon"></i><span>Settings</span></a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <button @click="toggleTheme()" class="theme-btn">
+            <i data-lucide="sun" x-show="theme==='light'" style="width:16px;height:16px"></i>
+            <i data-lucide="moon" x-show="theme==='dark'" style="width:16px;height:16px"></i>
+            <span>Theme</span>
+        </button>
+    </div>
+</aside>
 
-    <main style="padding:24px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-            <div>
-                <h2 style="font-size:28px;font-weight:700;margin:0 0 8px 0">Groups Management</h2>
-                <p style="color:var(--text-secondary);margin:0">Organize clients into logical groups</p>
+<main style="padding:24px;padding-bottom:100px">
+    <div style="margin-bottom:24px">
+        <h1 style="font-size:28px;font-weight:700;margin-bottom:8px;color:var(--text-primary)">📑 Groups Management</h1>
+        <p style="font-size:14px;color:var(--text-secondary)">Organize network clients into logical groups</p>
+    </div>
+
+    <!-- Form Section -->
+    <div x-show="showForm" x-transition class="card" style="padding:24px;margin-bottom:24px">
+        <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;color:var(--text-primary)"
+            x-text="editingGroup ? 'Edit Group' : 'Add New Group'"></h2>
+
+        <form @submit.prevent="saveGroup()">
+            <div class="form-group">
+                <label class="form-label">Group Name</label>
+                <input type="text" class="input" x-model="form.name" placeholder="Enter group name" required
+                       :disabled="editingGroup && editingGroup.is_default">
             </div>
-            <button @click="openCreateModal()" class="btn btn-primary">
-                <i data-lucide="plus" style="width:16px;height:16px;display:inline;margin-right:8px"></i>
-                Add Group
-            </button>
-        </div>
 
-        <div style="background:var(--bg-secondary);border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Status</th>
-                        <th>Comment</th>
-                        <th>Clients</th>
-                        <th style="width:120px">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template x-for="group in groups" :key="group.id">
-                        <tr>
-                            <td>
-                                <span x-text="group.name" style="font-weight:500"></span>
-                                <span x-show="group.is_default" class="badge badge-default">Default</span>
-                            </td>
-                            <td>
-                                <span :class="group.enabled ? 'badge-success' : 'badge-inactive'" class="badge" x-text="group.enabled ? 'Enabled' : 'Disabled'"></span>
-                            </td>
-                            <td x-text="group.comment || '-'" style="color:var(--text-secondary)"></td>
-                            <td x-text="group.client_count || 0"></td>
-                            <td>
-                                <button @click="openEditModal(group)" class="btn-icon" title="Edit">
-                                    <i data-lucide="edit-2" style="width:16px;height:16px"></i>
-                                </button>
-                                <button @click="deleteGroup(group.id, group.is_default)" :disabled="group.is_default" class="btn-icon" title="Delete">
-                                    <i data-lucide="trash-2" style="width:16px;height:16px"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
-        </div>
-
-        <div x-show="showModal" class="modal" @click.self="closeModal()">
-            <div class="modal-content" @click.stop>
-                <h3 style="font-size:20px;font-weight:700;margin:0 0 20px 0" x-text="editingGroup ? 'Edit Group' : 'Create Group'"></h3>
-                <form @submit.prevent="editingGroup ? updateGroup(editingGroup.id) : createGroup()">
-                    <div class="form-group">
-                        <label class="form-label">Group Name</label>
-                        <input type="text" x-model="form.name" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" x-model="form.enabled" :disabled="editingGroup && editingGroup.is_default">
-                            Enabled
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Comment</label>
-                        <textarea x-model="form.comment" class="form-textarea" maxlength="500"></textarea>
-                    </div>
-                    <div style="display:flex;gap:12px;justify-content:flex-end">
-                        <button type="button" @click="closeModal()" class="btn" style="background:var(--bg-tertiary)">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
+            <div class="form-group">
+                <label class="form-label">Comment (Optional)</label>
+                <textarea class="textarea" x-model="form.comment"
+                          placeholder="Add a description for this group"></textarea>
             </div>
-        </div>
-    </main>
 
-    <script>
-        function app() {
-            return {
-                theme: 'light',
-                groups: [],
-                showModal: false,
-                editingGroup: null,
-                form: {
-                    name: '',
-                    enabled: true,
-                    comment: ''
-                },
-                async init() {
-                    this.theme = localStorage.getItem('theme') || 'light';
-                    document.documentElement.classList.toggle('dark', this.theme === 'dark');
-                    await this.loadGroups();
-                    await this.$nextTick();
-                    lucide.createIcons();
-                },
-                async loadGroups() {
-                    try {
-                        const res = await fetch('/api/groups');
-                        if (res.ok) {
-                            this.groups = await res.json();
-                        }
-                    } catch (e) {
-                        console.error('Failed to load groups:', e);
+            <div class="form-group" x-show="editingGroup && !editingGroup.is_default">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" x-model="form.enabled" style="width:18px;height:18px;cursor:pointer">
+                    <span class="form-label" style="margin:0">Group Enabled</span>
+                </label>
+            </div>
+
+            <div style="display:flex;gap:12px">
+                <button type="submit" class="btn btn-primary">
+                    <span x-text="editingGroup ? 'Update Group' : 'Create Group'"></span>
+                </button>
+                <button type="button" class="btn btn-secondary" @click="cancelForm()">Cancel</button>
+            </div>
+
+            <div x-show="error" x-text="error" style="margin-top:12px;padding:12px;background:rgba(239,68,68,0.1);color:var(--color-error);border-radius:8px;font-size:14px"></div>
+        </form>
+    </div>
+
+    <!-- Groups Table -->
+    <div class="card">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Comment</th>
+                <th>Clients</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <template x-for="group in groups" :key="group.id">
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <span style="font-weight:500;color:var(--text-primary)" x-text="group.name"></span>
+                            <span x-show="group.is_default" class="badge badge-default">Default</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge" :class="group.enabled ? 'badge-success' : 'badge-inactive'"
+                              x-text="group.enabled ? 'Enabled' : 'Disabled'"></span>
+                    </td>
+                    <td>
+                        <span style="color:var(--text-secondary);font-size:14px"
+                              x-text="group.comment || '-'"></span>
+                    </td>
+                    <td>
+                        <span style="color:var(--text-primary);font-weight:500"
+                              x-text="group.client_count || 0"></span>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:8px">
+                            <button @click="editGroup(group)" class="btn-icon" title="Edit">
+                                <i data-lucide="edit-2" style="width:16px;height:16px"></i>
+                            </button>
+                            <button @click="deleteGroup(group)" class="btn-icon" :disabled="group.is_default"
+                                    title="Delete">
+                                <i data-lucide="trash-2" style="width:16px;height:16px"
+                                   :style="group.is_default ? 'opacity:0.3' : ''"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </template>
+            <tr x-show="groups.length === 0">
+                <td colspan="5" style="text-align:center;padding:48px;color:var(--text-secondary)">
+                    <i data-lucide="layers" style="width:48px;height:48px;margin-bottom:16px"></i>
+                    <p>No groups found</p>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<button class="add-btn-fixed" @click="openCreateForm()" x-show="!showForm">
+    <i data-lucide="plus" style="width:20px;height:20px"></i>
+    <span>Add Group</span>
+</button>
+
+<script>
+    function app() {
+        return {
+            theme: 'light',
+            groups: [],
+            showForm: false,
+            editingGroup: null,
+            form: {
+                name: '',
+                enabled: true,
+                comment: ''
+            },
+            error: '',
+
+            async init() {
+                this.theme = localStorage.getItem('theme') || 'light';
+                document.documentElement.classList.toggle('dark', this.theme === 'dark');
+                await this.loadGroups();
+                await this.$nextTick();
+                lucide.createIcons();
+            },
+
+            async loadGroups() {
+                try {
+                    const res = await fetch('/api/groups');
+                    if (res.ok) {
+                        this.groups = await res.json();
+                        await this.$nextTick();
+                        lucide.createIcons();
                     }
-                },
-                async createGroup() {
-                    try {
-                        const res = await fetch('/api/groups', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify(this.form)
-                        });
-                        if (res.ok) {
-                            await this.loadGroups();
-                            this.closeModal();
-                        } else {
-                            const err = await res.text();
-                            alert('Error: ' + err);
-                        }
-                    } catch (e) {
-                        console.error('Failed to create group:', e);
-                        alert('Failed to create group');
-                    }
-                },
-                async updateGroup(id) {
-                    try {
-                        const res = await fetch(`/api/groups/${id}`, {
+                } catch (e) {
+                    console.error('Failed to load groups:', e);
+                }
+            },
+
+            openCreateForm() {
+                this.editingGroup = null;
+                this.form = {name: '', enabled: true, comment: ''};
+                this.error = '';
+                this.showForm = true;
+                this.$nextTick(() => lucide.createIcons());
+            },
+
+            editGroup(group) {
+                this.editingGroup = group;
+                this.form = {
+                    name: group.name,
+                    enabled: group.enabled,
+                    comment: group.comment || ''
+                };
+                this.error = '';
+                this.showForm = true;
+                this.$nextTick(() => lucide.createIcons());
+            },
+
+            cancelForm() {
+                this.showForm = false;
+                this.editingGroup = null;
+                this.form = {name: '', enabled: true, comment: ''};
+                this.error = '';
+            },
+
+            async saveGroup() {
+                try {
+                    this.error = '';
+                    const payload = {
+                        name: this.form.name.trim(),
+                        comment: this.form.comment.trim() || null
+                    };
+
+                    let res;
+                    if (this.editingGroup) {
+                        payload.enabled = this.form.enabled;
+                        res = await fetch(`/api/groups/${this.editingGroup.id}`, {
                             method: 'PUT',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify(this.form)
+                            body: JSON.stringify(payload)
                         });
-                        if (res.ok) {
-                            await this.loadGroups();
-                            this.closeModal();
-                        } else {
-                            const err = await res.text();
-                            alert('Error: ' + err);
-                        }
-                    } catch (e) {
-                        console.error('Failed to update group:', e);
-                        alert('Failed to update group');
-                    }
-                },
-                async deleteGroup(id, isDefault) {
-                    if (isDefault) {
-                        alert('Cannot delete the Protected group');
-                        return;
-                    }
-                    if (!confirm('Are you sure you want to delete this group?')) {
-                        return;
-                    }
-                    try {
-                        const res = await fetch(`/api/groups/${id}`, {
-                            method: 'DELETE'
+                    } else {
+                        res = await fetch('/api/groups', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(payload)
                         });
-                        if (res.ok) {
-                            await this.loadGroups();
-                        } else if (res.status === 409) {
-                            alert('Cannot delete group with assigned clients');
-                        } else if (res.status === 403) {
-                            alert('Cannot delete the Protected group');
-                        } else {
-                            alert('Failed to delete group');
-                        }
-                    } catch (e) {
-                        console.error('Failed to delete group:', e);
-                        alert('Failed to delete group');
                     }
-                },
-                openCreateModal() {
-                    this.editingGroup = null;
-                    this.form = {name: '', enabled: true, comment: ''};
-                    this.showModal = true;
-                },
-                openEditModal(group) {
-                    this.editingGroup = group;
-                    this.form = {
-                        name: group.name,
-                        enabled: group.enabled,
-                        comment: group.comment || ''
-                    };
-                    this.showModal = true;
-                },
-                closeModal() {
-                    this.showModal = false;
-                    this.editingGroup = null;
-                    this.form = {name: '', enabled: true, comment: ''};
-                },
-                toggleTheme() {
-                    this.theme = this.theme === 'light' ? 'dark' : 'light';
-                    localStorage.setItem('theme', this.theme);
-                    document.documentElement.classList.toggle('dark', this.theme === 'dark');
+
+                    if (res.ok) {
+                        await this.loadGroups();
+                        this.cancelForm();
+                    } else {
+                        const errorText = await res.text();
+                        this.error = errorText || 'Failed to save group';
+                    }
+                } catch (e) {
+                    console.error('Error saving group:', e);
+                    this.error = 'Network error: ' + e.message;
                 }
+            },
+
+            async deleteGroup(group) {
+                if (group.is_default) {
+                    alert('Cannot delete the Protected group');
+                    return;
+                }
+
+                if (!confirm(`Are you sure you want to delete the group "${group.name}"?`)) {
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/groups/${group.id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (res.ok) {
+                        await this.loadGroups();
+                    } else {
+                        const errorText = await res.text();
+                        if (res.status === 409) {
+                            alert('Cannot delete group with assigned clients');
+                        } else {
+                            alert('Failed to delete group: ' + errorText);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error deleting group:', e);
+                    alert('Network error: ' + e.message);
+                }
+            },
+
+            toggleTheme() {
+                this.theme = this.theme === 'light' ? 'dark' : 'light';
+                localStorage.setItem('theme', this.theme);
+                document.documentElement.classList.toggle('dark', this.theme === 'dark');
             }
         }
-    </script>
+    }
+</script>
 </body>
 </html>
