@@ -185,11 +185,14 @@ impl DnsServices {
             info!("✓ Local DNS records preloaded (cached permanently, <0.1ms resolution)");
         }
 
-        let handler_use_case = Arc::new(HandleDnsQueryUseCase::new(
-            resolver.clone(),
-            repos.blocklist.clone(),
-            repos.query_log.clone(),
-        ));
+        let handler_use_case = Arc::new(
+            HandleDnsQueryUseCase::new(
+                resolver.clone(),
+                repos.blocklist.clone(),
+                repos.query_log.clone(),
+            )
+            .with_client_tracking(repos.client.clone()),
+        );
 
         info!("DNS services initialized successfully with load balancing");
 
