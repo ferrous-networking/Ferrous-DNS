@@ -878,26 +878,40 @@
                 this.filteredKnownClients = [];
             },
             async submitUnifiedForm() {
+                console.log('🚀 submitUnifiedForm CALLED!');
+                console.log('detectedType:', this.unifiedForm.detectedType);
+                console.log('validationError:', this.unifiedForm.validationError);
+
                 if (!this.unifiedForm.detectedType) {
+                    console.log('❌ BLOCKED: No detected type');
                     alert('Please enter a valid IP address, CIDR subnet, or MAC address');
                     return;
                 }
                 if (this.unifiedForm.detectedType === 'mac') {
+                    console.log('❌ BLOCKED: MAC detected');
                     alert('MAC address detected! Please also enter the IP address, or select an existing client.');
                     return;
                 }
                 if (this.unifiedForm.validationError) {
+                    console.log('❌ BLOCKED: Validation error:', this.unifiedForm.validationError);
                     alert(this.unifiedForm.validationError);
                     return;
                 }
+
+                console.log('✅ Proceeding to submit...');
+                console.log('Type:', this.unifiedForm.detectedType);
+
                 try {
                     if (this.unifiedForm.detectedType === 'subnet') {
+                        console.log('📡 Calling submitSubnet()');
                         await this.submitSubnet();
                     } else {
+                        console.log('📡 Calling submitClient()');
                         await this.submitClient();
                     }
                 } catch (e) {
-                    console.error('Submission error:', e);
+                    console.error('💥 Submission error:', e);
+                    alert('Error: ' + e.message);
                 }
             },
             async submitClient() {
