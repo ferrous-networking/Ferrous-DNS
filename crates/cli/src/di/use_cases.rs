@@ -5,6 +5,7 @@ use ferrous_dns_application::use_cases::{
     SyncArpCacheUseCase, SyncHostnamesUseCase, TrackClientUseCase, UpdateConfigUseCase,
 };
 use ferrous_dns_domain::Config;
+use ferrous_dns_infrastructure::dns::PoolManager;
 use ferrous_dns_infrastructure::system::{LinuxArpReader, PtrHostnameResolver};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -26,10 +27,13 @@ pub struct UseCases {
 }
 
 impl UseCases {
-    pub fn new(repos: &Repositories, config: Arc<RwLock<Config>>) -> Self {
-        // Create system service instances
+    pub fn new(
+        repos: &Repositories,
+        config: Arc<RwLock<Config>>,
+        pool_manager: Arc<PoolManager>,
+    ) -> Self {
         let arp_reader = Arc::new(LinuxArpReader::new());
-        let hostname_resolver = Arc::new(PtrHostnameResolver::default());
+        let hostname_resolver = Arc::new(PtrHostnameResolver::new(pool_manager, 5));
 
         Self {
             get_stats: Arc::new(GetQueryStatsUseCase::new(repos.query_log.clone())),

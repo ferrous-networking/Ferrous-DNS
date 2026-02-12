@@ -16,6 +16,7 @@ pub struct DnsServices {
     pub resolver: Arc<HickoryDnsResolver>,
     pub cache: Arc<DnsCache>,
     pub handler_use_case: Arc<HandleDnsQueryUseCase>,
+    pub pool_manager: Arc<PoolManager>,
 }
 
 impl DnsServices {
@@ -152,7 +153,7 @@ impl DnsServices {
             info!("Starting cache background tasks");
 
             let resolver_for_updater =
-                HickoryDnsResolver::new_with_pools(pool_manager_clone, timeout_ms, false, None)?
+                HickoryDnsResolver::new_with_pools(pool_manager_clone.clone(), timeout_ms, false, None)?
                     .with_cache(cache.clone(), config.dns.cache_ttl);
 
             let updater = CacheUpdater::new(
@@ -200,6 +201,7 @@ impl DnsServices {
             resolver,
             cache,
             handler_use_case,
+            pool_manager: pool_manager_clone,
         })
     }
 

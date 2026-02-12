@@ -70,8 +70,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Dependency Injection - Build all dependencies
     let repos = di::Repositories::new(pool).await?;
-    let use_cases = di::UseCases::new(&repos, config_arc.clone());
     let dns_services = di::DnsServices::new(&config, &repos).await?;
+    let use_cases = di::UseCases::new(&repos, config_arc.clone(), dns_services.pool_manager.clone());
 
     // Start background jobs for client tracking
     info!("Starting client tracking background jobs");

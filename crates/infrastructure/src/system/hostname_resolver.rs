@@ -50,12 +50,6 @@ impl PtrHostnameResolver {
     }
 }
 
-impl Default for PtrHostnameResolver {
-    fn default() -> Self {
-        panic!("PtrHostnameResolver::default() should not be used. Use new() with PoolManager instead.")
-    }
-}
-
 #[async_trait]
 impl HostnameResolver for PtrHostnameResolver {
     async fn resolve_hostname(&self, ip: IpAddr) -> Result<Option<String>, DomainError> {
