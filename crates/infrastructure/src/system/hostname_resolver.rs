@@ -1,55 +1,138 @@
 use async_trait::async_trait;
 use ferrous_dns_application::ports::HostnameResolver;
-use ferrous_dns_domain::DomainError;
+use ferrous_dns_domain::{DomainError, RecordType};
+use hickory_proto::rr::RData;
 use std::net::IpAddr;
+use std::sync::Arc;
 use tracing::debug;
 
-/// PTR-based hostname resolver
+use crate::dns::load_balancer::PoolManager;
+
+/// PTR-based hostname resolver using internal DNS transport
 ///
-/// NOTE: Full PTR lookup implementation is pending due to API changes in
-/// hickory-resolver 0.26.0-alpha.1. The current alpha version has breaking
-/// changes from 0.24.x that require API adjustments.
-///
-/// When implementing:
-/// 1. Use hickory-resolver with stable API (when available)
-/// 2. Implement reverse_lookup using TokioResolver
-/// 3. Handle timeouts and DNS errors gracefully
-/// 4. Return first PTR record from lookup results
-///
-/// For now, this returns None (no hostname found) which allows the client
-/// tracking system to function without hostnames.
+/// Uses the existing DNS transport layer (UDP/TCP/TLS/HTTPS) to perform
+/// reverse DNS lookups (PTR records) for IP addresses.
 pub struct PtrHostnameResolver {
+    pool_manager: Arc<PoolManager>,
     timeout_secs: u64,
 }
 
 impl PtrHostnameResolver {
-    pub fn new(timeout_secs: u64) -> Self {
-        Self { timeout_secs }
+    /// Create a new resolver with existing DNS transport infrastructure
+    pub fn new(pool_manager: Arc<PoolManager>, timeout_secs: u64) -> Self {
+        Self {
+            pool_manager,
+            timeout_secs,
+        }
+    }
+
+    /// Convert IP address to reverse DNS domain name
+    /// Example: 192.168.1.1 -> 1.1.168.192.in-addr.arpa
+    /// Example: 2001:db8::1 -> 1.0.0.0...0.8.b.d.0.1.0.0.2.ip6.arpa
+    fn ip_to_reverse_domain(ip: &IpAddr) -> String {
+        match ip {
+            IpAddr::V4(ipv4) => {
+                let octets = ipv4.octets();
+                format!(
+                    "{}.{}.{}.{}.in-addr.arpa",
+                    octets[3], octets[2], octets[1], octets[0]
+                )
+            }
+            IpAddr::V6(ipv6) => {
+                let mut nibbles = Vec::new();
+                for byte in ipv6.octets().iter().rev() {
+                    nibbles.push(format!("{:x}", byte & 0x0f));
+                    nibbles.push(format!("{:x}", (byte >> 4) & 0x0f));
+                }
+                format!("{}.ip6.arpa", nibbles.join("."))
+            }
+        }
     }
 }
 
 impl Default for PtrHostnameResolver {
     fn default() -> Self {
-        Self::new(2) // 2 second timeout
+        // For default(), create with a dummy PoolManager
+        // This is mainly for testing - production code should use new()
+        panic!("PtrHostnameResolver::default() should not be used. Use new() with PoolManager instead.")
     }
 }
 
 #[async_trait]
 impl HostnameResolver for PtrHostnameResolver {
     async fn resolve_hostname(&self, ip: IpAddr) -> Result<Option<String>, DomainError> {
+        let reverse_domain = Self::ip_to_reverse_domain(&ip);
+
         debug!(
             ip = %ip,
-            timeout_secs = self.timeout_secs,
-            "PTR hostname resolution not yet implemented (pending hickory-resolver API stabilization)"
+            reverse_domain = %reverse_domain,
+            "Performing PTR lookup"
         );
 
-        // TODO: Implement actual PTR lookup when hickory-resolver 0.26.x API is stable
-        // Expected implementation:
-        // 1. Create/reuse TokioResolver instance
-        // 2. Call resolver.reverse_lookup(ip) with timeout
-        // 3. Extract first PTR record from results
-        // 4. Return hostname or None on errors/timeout
+        // Query for PTR record using existing DNS infrastructure
+        let timeout_ms = self.timeout_secs * 1000;
 
-        Ok(None)
+        match self
+            .pool_manager
+            .query(&reverse_domain, &RecordType::PTR, timeout_ms)
+            .await
+        {
+            Ok(result) => {
+                // PTR records are in raw_answers, not addresses
+                // Look for PTR record in the response
+                for record in &result.response.raw_answers {
+                    if let RData::PTR(ptr) = record.data() {
+                        let hostname = ptr.to_utf8();
+                        debug!(
+                            ip = %ip,
+                            hostname = %hostname,
+                            "PTR lookup successful"
+                        );
+                        return Ok(Some(hostname));
+                    }
+                }
+
+                debug!(ip = %ip, "PTR lookup returned no records");
+                Ok(None)
+            }
+            Err(e) => {
+                debug!(
+                    ip = %ip,
+                    error = %e,
+                    reverse_domain = %reverse_domain,
+                    "PTR lookup failed"
+                );
+                // Return None instead of error - no PTR record is acceptable
+                Ok(None)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ip_to_reverse_domain_ipv4() {
+        let ip: IpAddr = "192.168.1.1".parse().unwrap();
+        let reverse = PtrHostnameResolver::ip_to_reverse_domain(&ip);
+        assert_eq!(reverse, "1.1.168.192.in-addr.arpa");
+    }
+
+    #[test]
+    fn test_ip_to_reverse_domain_ipv4_zeros() {
+        let ip: IpAddr = "10.0.0.1".parse().unwrap();
+        let reverse = PtrHostnameResolver::ip_to_reverse_domain(&ip);
+        assert_eq!(reverse, "1.0.0.10.in-addr.arpa");
+    }
+
+    #[test]
+    fn test_ip_to_reverse_domain_ipv6() {
+        let ip: IpAddr = "2001:db8::1".parse().unwrap();
+        let reverse = PtrHostnameResolver::ip_to_reverse_domain(&ip);
+        // Should be: 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
+        assert!(reverse.ends_with(".ip6.arpa"));
+        assert!(reverse.contains("8.b.d.0.1.0.0.2"));
     }
 }
