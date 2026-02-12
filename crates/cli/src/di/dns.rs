@@ -152,9 +152,13 @@ impl DnsServices {
         if config.dns.cache_enabled && config.dns.cache_optimistic_refresh {
             info!("Starting cache background tasks");
 
-            let resolver_for_updater =
-                HickoryDnsResolver::new_with_pools(pool_manager_clone.clone(), timeout_ms, false, None)?
-                    .with_cache(cache.clone(), config.dns.cache_ttl);
+            let resolver_for_updater = HickoryDnsResolver::new_with_pools(
+                pool_manager_clone.clone(),
+                timeout_ms,
+                false,
+                None,
+            )?
+            .with_cache(cache.clone(), config.dns.cache_ttl);
 
             let updater = CacheUpdater::new(
                 cache.clone(),
