@@ -1,6 +1,12 @@
 use std::net::IpAddr;
 use std::sync::Arc;
 
+/// Time threshold for MAC address updates (5 minutes in seconds)
+const MAC_UPDATE_THRESHOLD_SECS: i64 = 300;
+
+/// Time threshold for hostname updates (1 hour in seconds)
+const HOSTNAME_UPDATE_THRESHOLD_SECS: i64 = 3600;
+
 /// Represents a network client detected via DNS queries
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -34,14 +40,14 @@ impl Client {
     pub fn should_update_mac(&self) -> bool {
         self.last_mac_update.is_none()
             || self.mac_address.is_none()
-            || self.is_stale(&self.last_mac_update, 300) // 5 minutes
+            || self.is_stale(&self.last_mac_update, MAC_UPDATE_THRESHOLD_SECS)
     }
 
     /// Check if hostname needs updating (>1 hour since last update)
     pub fn should_update_hostname(&self) -> bool {
         self.last_hostname_update.is_none()
             || self.hostname.is_none()
-            || self.is_stale(&self.last_hostname_update, 3600) // 1 hour
+            || self.is_stale(&self.last_hostname_update, HOSTNAME_UPDATE_THRESHOLD_SECS)
     }
 
     fn is_stale(&self, last_update: &Option<String>, threshold_secs: i64) -> bool {

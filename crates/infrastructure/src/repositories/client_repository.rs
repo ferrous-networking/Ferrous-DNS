@@ -4,7 +4,7 @@ use ferrous_dns_domain::{Client, ClientStats, DomainError};
 use sqlx::SqlitePool;
 use std::net::IpAddr;
 use std::sync::Arc;
-use tracing::{debug, error, instrument};
+use tracing::{error, instrument};
 
 pub struct SqliteClientRepository {
     pool: SqlitePool,
@@ -13,6 +13,25 @@ pub struct SqliteClientRepository {
 impl SqliteClientRepository {
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
+    }
+
+    /// Helper to convert database row tuple to Client domain model
+    fn row_to_client(
+        row: (i64, String, Option<String>, Option<String>, String, String, i64, Option<String>, Option<String>)
+    ) -> Option<Client> {
+        let (id, ip, mac, hostname, first_seen, last_seen, query_count, last_mac_update, last_hostname_update) = row;
+
+        Some(Client {
+            id: Some(id),
+            ip_address: ip.parse().ok()?,
+            mac_address: mac.map(|s| Arc::from(s.as_str())),
+            hostname: hostname.map(|s| Arc::from(s.as_str())),
+            first_seen: Some(first_seen),
+            last_seen: Some(last_seen),
+            query_count: query_count as u64,
+            last_mac_update,
+            last_hostname_update,
+        })
     }
 }
 
@@ -164,19 +183,7 @@ impl ClientRepository for SqliteClientRepository {
             DomainError::InvalidDomainName(format!("Database error: {}", e))
         })?;
 
-        Ok(rows.into_iter().filter_map(|(id, ip, mac, hostname, first_seen, last_seen, query_count, last_mac_update, last_hostname_update)| {
-            Some(Client {
-                id: Some(id),
-                ip_address: ip.parse().ok()?,
-                mac_address: mac.map(|s| Arc::from(s.as_str())),
-                hostname: hostname.map(|s| Arc::from(s.as_str())),
-                first_seen: Some(first_seen),
-                last_seen: Some(last_seen),
-                query_count: query_count as u64,
-                last_mac_update,
-                last_hostname_update,
-            })
-        }).collect())
+        Ok(rows.into_iter().filter_map(Self::row_to_client).collect())
     }
 
     #[instrument(skip(self))]
@@ -202,19 +209,7 @@ impl ClientRepository for SqliteClientRepository {
             DomainError::InvalidDomainName(format!("Database error: {}", e))
         })?;
 
-        Ok(rows.into_iter().filter_map(|(id, ip, mac, hostname, first_seen, last_seen, query_count, last_mac_update, last_hostname_update)| {
-            Some(Client {
-                id: Some(id),
-                ip_address: ip.parse().ok()?,
-                mac_address: mac.map(|s| Arc::from(s.as_str())),
-                hostname: hostname.map(|s| Arc::from(s.as_str())),
-                first_seen: Some(first_seen),
-                last_seen: Some(last_seen),
-                query_count: query_count as u64,
-                last_mac_update,
-                last_hostname_update,
-            })
-        }).collect())
+        Ok(rows.into_iter().filter_map(Self::row_to_client).collect())
     }
 
     #[instrument(skip(self))]
@@ -284,19 +279,7 @@ impl ClientRepository for SqliteClientRepository {
             DomainError::InvalidDomainName(format!("Database error: {}", e))
         })?;
 
-        Ok(rows.into_iter().filter_map(|(id, ip, mac, hostname, first_seen, last_seen, query_count, last_mac_update, last_hostname_update)| {
-            Some(Client {
-                id: Some(id),
-                ip_address: ip.parse().ok()?,
-                mac_address: mac.map(|s| Arc::from(s.as_str())),
-                hostname: hostname.map(|s| Arc::from(s.as_str())),
-                first_seen: Some(first_seen),
-                last_seen: Some(last_seen),
-                query_count: query_count as u64,
-                last_mac_update,
-                last_hostname_update,
-            })
-        }).collect())
+        Ok(rows.into_iter().filter_map(Self::row_to_client).collect())
     }
 
     #[instrument(skip(self))]
@@ -323,18 +306,6 @@ impl ClientRepository for SqliteClientRepository {
             DomainError::InvalidDomainName(format!("Database error: {}", e))
         })?;
 
-        Ok(rows.into_iter().filter_map(|(id, ip, mac, hostname, first_seen, last_seen, query_count, last_mac_update, last_hostname_update)| {
-            Some(Client {
-                id: Some(id),
-                ip_address: ip.parse().ok()?,
-                mac_address: mac.map(|s| Arc::from(s.as_str())),
-                hostname: hostname.map(|s| Arc::from(s.as_str())),
-                first_seen: Some(first_seen),
-                last_seen: Some(last_seen),
-                query_count: query_count as u64,
-                last_mac_update,
-                last_hostname_update,
-            })
-        }).collect())
+        Ok(rows.into_iter().filter_map(Self::row_to_client).collect())
     }
 }

@@ -2,7 +2,7 @@ use crate::ports::ClientRepository;
 use ferrous_dns_domain::DomainError;
 use std::net::IpAddr;
 use std::sync::Arc;
-use tracing::{debug, warn};
+use tracing::debug;
 
 /// Use case: Track a client when they make a DNS query
 pub struct TrackClientUseCase {

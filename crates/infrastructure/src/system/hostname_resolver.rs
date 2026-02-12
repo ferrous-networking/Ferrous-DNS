@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ferrous_dns_application::ports::HostnameResolver;
 use ferrous_dns_domain::DomainError;
 use std::net::IpAddr;
-use tracing::{debug, warn};
+use tracing::debug;
 
 /// PTR-based hostname resolver using system DNS
 /// Note: This is a placeholder implementation that always returns None
