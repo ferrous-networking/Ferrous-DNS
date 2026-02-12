@@ -891,23 +891,39 @@
                 }
             },
             async submitClient() {
+                console.log('=== SUBMIT CLIENT DEBUG ===');
+                console.log('Address:', this.unifiedForm.address);
+                console.log('Group ID (raw):', this.unifiedForm.group_id);
+                console.log('Hostname:', this.unifiedForm.metadata);
+
                 const payload = {
                     ip_address: this.unifiedForm.address,
                     group_id: this.unifiedForm.group_id ? parseInt(this.unifiedForm.group_id) : null,
                     hostname: this.unifiedForm.metadata || null,
                     mac_address: null
                 };
+
+                console.log('Payload:', JSON.stringify(payload, null, 2));
+
                 const res = await fetch('/api/clients', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
                 });
+
+                console.log('Response status:', res.status);
+                console.log('Response ok:', res.ok);
+
                 if (res.ok) {
+                    const data = await res.json();
+                    console.log('Created client:', data);
                     this.resetUnifiedForm();
                     await this.loadClients();
+                    await this.loadManualClients();
                     alert('Client added successfully!');
                 } else {
                     const error = await res.text();
+                    console.error('Error response:', error);
                     alert('Failed: ' + error);
                 }
             },
@@ -929,6 +945,8 @@
                 if (res.ok) {
                     this.resetUnifiedForm();
                     await this.loadSubnets();
+                    await this.loadClients();
+                    await this.loadManualClients();
                     alert('Subnet added successfully!');
                 } else {
                     const error = await res.text();
