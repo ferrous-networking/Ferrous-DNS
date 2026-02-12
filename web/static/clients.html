@@ -407,47 +407,88 @@
             </div>
         </div>
         <div x-show="activeTab==='management'" style="padding:24px">
+            <!-- Page Header -->
+            <div style="margin-bottom:24px">
+                <h1 style="font-size:28px;font-weight:700;margin-bottom:8px;color:var(--text-primary)">
+                    👥 Client Management
+                </h1>
+                <p style="font-size:14px;color:var(--text-secondary)">
+                    Add and organize DNS clients by IP, subnet or MAC address
+                </p>
+            </div>
+
             <!-- Unified Add Client/Subnet Form -->
-            <div style="max-width:600px;margin:0 auto 32px">
-                <div style="background:var(--bg-tertiary);padding:24px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-                    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text-primary)">
-                        <i data-lucide="plus-circle" style="width:16px;height:16px;display:inline-block;vertical-align:middle"></i>
+            <div class="form-container" style="max-width:600px;margin:0 auto 32px">
+                <div class="card" style="background:var(--bg-tertiary);padding:24px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                    <h3 style="font-size:20px;font-weight:700;margin-bottom:16px;color:var(--text-primary)">
+                        <i data-lucide="plus-circle" style="width:18px;height:18px;display:inline-block;vertical-align:middle"></i>
                         Add Client or Subnet
                     </h3>
 
                     <!-- Type Detection Badge -->
                     <div x-show="unifiedForm.detectedType"
-                         style="margin-bottom:12px;padding:8px 12px;border-radius:6px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:8px;transition:all 0.2s"
-                         :style="'background:' + (unifiedForm.detectedType === 'subnet' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)') + ';color:' + (unifiedForm.detectedType === 'subnet' ? '#10b981' : '#3b82f6')">
+                         style="margin-bottom:16px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:8px;transition:all 0.2s"
+                         :style="'background:' + getBadgeBackground() + ';color:' + getBadgeColor()">
                         <i :data-lucide="getTypeIcon()" style="width:14px;height:14px"></i>
                         <span x-text="getTypeLabel()"></span>
                     </div>
 
-                    <form @submit.prevent="submitUnifiedForm()" style="display:flex;flex-direction:column;gap:14px">
-                        <!-- Address Input -->
-                        <div>
-                            <label style="font-size:13px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px">
+                    <form @submit.prevent="submitUnifiedForm()" style="display:flex;flex-direction:column;gap:16px">
+                        <!-- Address Input with Autocomplete -->
+                        <div style="position:relative">
+                            <label class="form-label" style="font-size:14px;font-weight:500;color:var(--text-primary);display:block;margin-bottom:6px">
                                 Address / Network *
                             </label>
                             <input x-model="unifiedForm.address"
-                                   @input="detectAddressType()"
+                                   @input="detectAddressType(); filterKnownClients()"
+                                   @focus="filterKnownClients()"
+                                   @blur="setTimeout(() => showClientDropdown = false, 200)"
                                    type="text"
-                                   placeholder="192.168.1.100 or 192.168.1.0/24"
+                                   placeholder="IP (192.168.1.100), CIDR (192.168.1.0/24) or MAC (aa:bb:cc:dd:ee:ff)"
                                    required
-                                   style="width:100%;padding:10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:14px">
+                                   autocomplete="off"
+                                   class="input"
+                                   style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:14px">
+
+                            <!-- Autocomplete Dropdown -->
+                            <div x-show="showClientDropdown"
+                                 style="position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:300px;overflow-y:auto;z-index:1000">
+                                <div style="padding:8px 12px;font-size:12px;font-weight:600;color:var(--text-secondary);border-bottom:1px solid var(--border-color)">
+                                    Known Clients
+                                </div>
+                                <template x-for="client in filteredKnownClients" :key="client.id">
+                                    <div @click="selectKnownClient(client)"
+                                         style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border-color);transition:background 0.15s"
+                                         @mouseenter="$el.style.background='var(--bg-tertiary)'"
+                                         @mouseleave="$el.style.background='var(--bg-secondary)'">
+                                        <div style="display:flex;justify-content:space-between;align-items:center">
+                                            <div>
+                                                <div style="font-size:14px;font-weight:500;color:var(--text-primary);font-family:monospace"
+                                                     x-text="client.ip_address"></div>
+                                                <div style="font-size:12px;color:var(--text-secondary)"
+                                                     x-text="client.hostname || 'No hostname'"></div>
+                                            </div>
+                                            <div style="font-size:11px;padding:2px 8px;background:var(--bg-tertiary);border-radius:4px;color:var(--text-secondary)"
+                                                 x-text="getGroupName(client.group_id)"></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
                             <p x-show="unifiedForm.validationError"
                                x-text="unifiedForm.validationError"
                                style="margin-top:6px;font-size:12px;color:#ef4444"></p>
                         </div>
 
                         <!-- Group Selection -->
-                        <div>
-                            <label style="font-size:13px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:14px;font-weight:500;color:var(--text-primary);display:block;margin-bottom:6px">
                                 Group <span x-show="unifiedForm.detectedType === 'subnet'" style="color:#ef4444">*</span>
                             </label>
                             <select x-model="unifiedForm.group_id"
                                     :required="unifiedForm.detectedType === 'subnet'"
-                                    style="width:100%;padding:10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:14px">
+                                    class="input"
+                                    style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:14px">
                                 <option value="">No Group</option>
                                 <template x-for="group in groups" :key="group.id">
                                     <option :value="group.id" x-text="group.name"></option>
@@ -456,72 +497,123 @@
                         </div>
 
                         <!-- Dynamic Metadata Field (Hostname or Comment) -->
-                        <div>
-                            <label style="font-size:13px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px"
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:14px;font-weight:500;color:var(--text-primary);display:block;margin-bottom:6px"
                                    x-text="unifiedForm.detectedType === 'subnet' ? 'Comment' : 'Hostname'">
                                 Hostname
                             </label>
                             <input x-model="unifiedForm.metadata"
                                    type="text"
                                    :placeholder="unifiedForm.detectedType === 'subnet' ? 'Office subnet' : 'device-name'"
-                                   style="width:100%;padding:10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:14px">
-                        </div>
-
-                        <!-- MAC Address (Only for IP) -->
-                        <div x-show="unifiedForm.detectedType === 'ip'">
-                            <label style="font-size:13px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px">
-                                MAC Address
-                            </label>
-                            <input x-model="unifiedForm.mac"
-                                   type="text"
-                                   placeholder="aa:bb:cc:dd:ee:ff"
-                                   style="width:100%;padding:10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:14px">
+                                   class="input"
+                                   style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:14px">
                         </div>
 
                         <!-- Submit Button -->
                         <button type="submit"
-                                :disabled="!unifiedForm.detectedType || unifiedForm.validationError"
-                                :style="'padding:12px;color:white;border:none;border-radius:4px;font-weight:600;cursor:pointer;margin-top:8px;font-size:14px;background:' + getSubmitButtonColor() + ';opacity:' + (!unifiedForm.detectedType || unifiedForm.validationError ? '0.5' : '1')">
+                                :disabled="!unifiedForm.detectedType || unifiedForm.detectedType === 'mac' || unifiedForm.validationError"
+                                class="btn btn-primary"
+                                :style="'padding:10px 16px;color:white;border:none;border-radius:8px;font-weight:500;cursor:pointer;margin-top:8px;font-size:14px;background:' + getSubmitButtonColor() + ';opacity:' + (!unifiedForm.detectedType || unifiedForm.detectedType === 'mac' || unifiedForm.validationError ? '0.5' : '1')">
                             <span x-text="getSubmitButtonText()">Add</span>
                         </button>
                     </form>
                 </div>
             </div>
 
-            <!-- Configured Subnets List -->
-            <div style="background:var(--bg-tertiary);padding:20px;border-radius:8px">
-                <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text-primary)">
-                    <i data-lucide="list" style="width:16px;height:16px;display:inline-block;vertical-align:middle"></i>
-                    Configured Subnets
-                </h3>
-                <div x-show="subnets.length===0" style="text-align:center;padding:32px;color:var(--text-secondary)">
-                    <p>No subnets configured yet</p>
+            <!-- Configured Clients List -->
+            <div class="card" style="background:var(--bg-tertiary);border-radius:8px;margin-bottom:24px">
+                <div style="padding:20px;border-bottom:1px solid var(--border-color)">
+                    <h3 style="font-size:16px;font-weight:600;color:var(--text-primary)">
+                        <i data-lucide="user-check" style="width:16px;height:16px;display:inline-block;vertical-align:middle"></i>
+                        Configured Clients
+                    </h3>
                 </div>
-                <table x-show="subnets.length>0" style="width:100%">
+
+                <div x-show="manualClients.length===0" style="padding:32px;text-align:center;color:var(--text-secondary)">
+                    <p>No manual clients yet</p>
+                </div>
+
+                <table x-show="manualClients.length>0" class="table" style="width:100%">
                     <thead>
-                    <tr>
-                        <th style="text-align:left;padding:8px;font-size:12px;color:var(--text-secondary)">Subnet</th>
-                        <th style="text-align:left;padding:8px;font-size:12px;color:var(--text-secondary)">Group</th>
-                        <th style="text-align:left;padding:8px;font-size:12px;color:var(--text-secondary)">Comment</th>
-                        <th style="text-align:left;padding:8px;font-size:12px;color:var(--text-secondary)">Created</th>
-                        <th style="text-align:center;padding:8px;font-size:12px;color:var(--text-secondary)">Action</th>
-                    </tr>
+                        <tr>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">IP Address</th>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Hostname</th>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">MAC Address</th>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Group</th>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Added</th>
+                            <th style="text-align:center;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Actions</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <template x-for="subnet in subnets" :key="subnet.id">
-                        <tr style="border-top:1px solid var(--border-color)">
-                            <td class="monospace" style="padding:8px;font-size:13px" x-text="subnet.subnet_cidr"></td>
-                            <td style="padding:8px;font-size:13px" x-text="subnet.group_name||'Unknown'"></td>
-                            <td style="padding:8px;font-size:13px" x-text="subnet.comment||'-'"></td>
-                            <td style="padding:8px;font-size:13px" x-text="formatDateTime(subnet.created_at)"></td>
-                            <td style="padding:8px;text-align:center">
-                                <button @click="deleteSubnet(subnet.id)"
-                                        style="padding:4px 8px;background:var(--color-error);color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">
-                                    Delete
-                                </button>
-                            </td>
+                        <template x-for="client in manualClients" :key="client.id">
+                            <tr style="border-bottom:1px solid var(--border-color);transition:background 0.15s"
+                                @mouseenter="$el.style.background='var(--bg-tertiary)'"
+                                @mouseleave="$el.style.background='transparent'">
+                                <td class="monospace" style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="client.ip_address"></td>
+                                <td style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="client.hostname||'-'"></td>
+                                <td class="monospace" style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="client.mac_address||'-'"></td>
+                                <td style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="getGroupName(client.group_id)"></td>
+                                <td style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="formatDateTime(client.first_seen)"></td>
+                                <td style="padding:16px;text-align:center">
+                                    <button @click="deleteManualClient(client.id)"
+                                            class="btn-icon"
+                                            title="Delete"
+                                            style="padding:8px;border-radius:8px;background:none;border:none;cursor:pointer;color:var(--text-secondary);transition:all 0.15s"
+                                            @mouseenter="$el.style.background='var(--bg-tertiary)';$el.style.color='var(--text-primary)'"
+                                            @mouseleave="$el.style.background='none';$el.style.color='var(--text-secondary)'">
+                                        <i data-lucide="trash-2" style="width:16px;height:16px"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Configured Subnets List -->
+            <div class="card" style="background:var(--bg-tertiary);border-radius:8px">
+                <div style="padding:20px;border-bottom:1px solid var(--border-color)">
+                    <h3 style="font-size:16px;font-weight:600;color:var(--text-primary)">
+                        <i data-lucide="network" style="width:16px;height:16px;display:inline-block;vertical-align:middle"></i>
+                        Configured Subnets
+                    </h3>
+                </div>
+
+                <div x-show="subnets.length===0" style="padding:32px;text-align:center;color:var(--text-secondary)">
+                    <p>No subnets configured yet</p>
+                </div>
+
+                <table x-show="subnets.length>0" class="table" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Subnet CIDR</th>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Group</th>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Comment</th>
+                            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Created</th>
+                            <th style="text-align:center;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">Actions</th>
                         </tr>
-                    </template>
+                    </thead>
+                    <tbody>
+                        <template x-for="subnet in subnets" :key="subnet.id">
+                            <tr style="border-bottom:1px solid var(--border-color);transition:background 0.15s"
+                                @mouseenter="$el.style.background='var(--bg-tertiary)'"
+                                @mouseleave="$el.style.background='transparent'">
+                                <td class="monospace" style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="subnet.subnet_cidr"></td>
+                                <td style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="subnet.group_name||'Unknown'"></td>
+                                <td style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="subnet.comment||'-'"></td>
+                                <td style="padding:16px;font-size:13px;color:var(--text-primary)" x-text="formatDateTime(subnet.created_at)"></td>
+                                <td style="padding:16px;text-align:center">
+                                    <button @click="deleteSubnet(subnet.id)"
+                                            class="btn-icon"
+                                            title="Delete"
+                                            style="padding:8px;border-radius:8px;background:none;border:none;cursor:pointer;color:var(--text-secondary);transition:all 0.15s"
+                                            @mouseenter="$el.style.background='var(--bg-tertiary)';$el.style.color='var(--text-primary)'"
+                                            @mouseleave="$el.style.background='none';$el.style.color='var(--text-secondary)'">
+                                        <i data-lucide="trash-2" style="width:16px;height:16px"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
@@ -542,10 +634,12 @@
                 address: '',
                 group_id: '',
                 metadata: '',
-                mac: '',
                 detectedType: null,
                 validationError: ''
             },
+            filteredKnownClients: [],
+            showClientDropdown: false,
+            manualClients: [],
             stats: {
                 total_clients: 0,
                 active_24h: 0,
@@ -567,7 +661,7 @@
                 setTimeout(() => lucide.createIcons(), 50)
             },
             async loadAllData() {
-                await Promise.all([this.loadClients(), this.loadStats(), this.loadGroups(), this.loadSubnets()])
+                await Promise.all([this.loadClients(), this.loadStats(), this.loadGroups(), this.loadSubnets(), this.loadManualClients()])
             },
             async loadClients() {
                 try {
@@ -614,6 +708,32 @@
                 const group = this.groups.find(g => g.id === groupId);
                 return group ? group.name : 'Unknown';
             },
+            async loadManualClients() {
+                try {
+                    const res = await fetch('/api/clients?limit=1000');
+                    if (res.ok) {
+                        const allClients = await res.json();
+                        this.manualClients = allClients.filter(c => c.hostname || c.mac_address);
+                    }
+                } catch (e) {
+                    console.error('Failed to load manual clients:', e)
+                }
+            },
+            async deleteManualClient(id) {
+                if (!confirm('Delete this client?')) return;
+                try {
+                    const res = await fetch(`/api/clients/${id}`, {method: 'DELETE'});
+                    if (res.ok) {
+                        await this.loadManualClients();
+                        alert('Client deleted!')
+                    } else {
+                        alert('Failed: ' + await res.text())
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Error deleting client')
+                }
+            },
             // Unified Form - Detection & Validation
             detectAddressType() {
                 const input = this.unifiedForm.address.trim();
@@ -624,20 +744,45 @@
                     return;
                 }
 
+                // 1. Check for CIDR notation (subnet)
                 if (input.includes('/')) {
-                    this.unifiedForm.detectedType = 'subnet';
-                    if (!this.isValidCIDR(input)) {
-                        this.unifiedForm.validationError = 'Invalid CIDR (e.g., 192.168.1.0/24)';
+                    if (this.isValidCIDR(input)) {
+                        this.unifiedForm.detectedType = 'subnet';
+                    } else {
+                        this.unifiedForm.detectedType = null;
+                        this.unifiedForm.validationError = 'Invalid CIDR format (e.g., 192.168.1.0/24)';
                     }
                     return;
                 }
 
+                // 2. Check for MAC address
+                if (this.isValidMAC(input)) {
+                    this.unifiedForm.detectedType = 'mac';
+
+                    // Auto-search for client with this MAC
+                    const clientWithMac = this.clients.find(c =>
+                        c.mac_address && c.mac_address.toLowerCase() === input.toLowerCase()
+                    );
+
+                    if (clientWithMac) {
+                        this.selectKnownClient(clientWithMac);
+                    } else {
+                        this.unifiedForm.validationError = 'MAC detected! Please also enter the IP address.';
+                    }
+                    return;
+                }
+
+                // 3. Check for IP address
                 if (this.isValidIP(input)) {
                     this.unifiedForm.detectedType = 'ip';
                 } else {
-                    this.unifiedForm.detectedType = 'ip';
-                    this.unifiedForm.validationError = 'Invalid IP address';
+                    this.unifiedForm.detectedType = null;
+                    this.unifiedForm.validationError = 'Invalid IP, CIDR or MAC address';
                 }
+            },
+            isValidMAC(mac) {
+                const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$|^[0-9A-Fa-f]{12}$/;
+                return macRegex.test(mac);
             },
             isValidIP(ip) {
                 const ipv4 = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/;
@@ -654,24 +799,81 @@
             getTypeLabel() {
                 const labels = {
                     'ip': 'IP Address → Individual Client',
-                    'subnet': 'CIDR Subnet → Multiple Clients'
+                    'subnet': 'CIDR Subnet → Multiple Clients',
+                    'mac': 'MAC Address → Add IP Required'
                 };
                 return labels[this.unifiedForm.detectedType] || '';
             },
             getTypeIcon() {
-                return this.unifiedForm.detectedType === 'subnet' ? 'network' : 'user';
+                const icons = {
+                    'ip': 'user',
+                    'subnet': 'network',
+                    'mac': 'wifi'
+                };
+                return icons[this.unifiedForm.detectedType] || 'circle';
             },
             getSubmitButtonColor() {
-                if (!this.unifiedForm.detectedType) return '#6b7280';
+                if (!this.unifiedForm.detectedType || this.unifiedForm.detectedType === 'mac') {
+                    return '#6b7280';
+                }
                 return this.unifiedForm.detectedType === 'subnet' ? '#10b981' : '#3b82f6';
             },
             getSubmitButtonText() {
                 if (!this.unifiedForm.detectedType) return 'Enter address...';
+                if (this.unifiedForm.detectedType === 'mac') return 'Add IP address';
                 return this.unifiedForm.detectedType === 'subnet' ? 'Add Subnet' : 'Add Client';
+            },
+            getBadgeBackground() {
+                const colors = {
+                    'ip': 'rgba(59,130,246,0.15)',
+                    'subnet': 'rgba(16,185,129,0.15)',
+                    'mac': 'rgba(249,115,22,0.15)'
+                };
+                return colors[this.unifiedForm.detectedType] || 'transparent';
+            },
+            getBadgeColor() {
+                const colors = {
+                    'ip': '#3b82f6',
+                    'subnet': '#10b981',
+                    'mac': '#f97316'
+                };
+                return colors[this.unifiedForm.detectedType] || '#6b7280';
+            },
+            filterKnownClients() {
+                const input = this.unifiedForm.address.toLowerCase().trim();
+
+                if (input.length < 2) {
+                    this.showClientDropdown = false;
+                    this.filteredKnownClients = [];
+                    return;
+                }
+
+                this.filteredKnownClients = this.clients
+                    .filter(c =>
+                        c.ip_address.toLowerCase().includes(input) ||
+                        (c.hostname && c.hostname.toLowerCase().includes(input))
+                    )
+                    .slice(0, 10);
+
+                this.showClientDropdown = this.filteredKnownClients.length > 0;
+            },
+            selectKnownClient(client) {
+                this.unifiedForm.address = client.ip_address;
+                this.unifiedForm.group_id = client.group_id || '';
+                this.unifiedForm.metadata = client.hostname || '';
+
+                this.detectAddressType();
+
+                this.showClientDropdown = false;
+                this.filteredKnownClients = [];
             },
             async submitUnifiedForm() {
                 if (!this.unifiedForm.detectedType) {
-                    alert('Please enter a valid IP address or CIDR subnet');
+                    alert('Please enter a valid IP address, CIDR subnet, or MAC address');
+                    return;
+                }
+                if (this.unifiedForm.detectedType === 'mac') {
+                    alert('MAC address detected! Please also enter the IP address, or select an existing client.');
                     return;
                 }
                 if (this.unifiedForm.validationError) {
@@ -691,9 +893,9 @@
             async submitClient() {
                 const payload = {
                     ip_address: this.unifiedForm.address,
-                    group_id: this.unifiedForm.group_id || null,
+                    group_id: this.unifiedForm.group_id ? parseInt(this.unifiedForm.group_id) : null,
                     hostname: this.unifiedForm.metadata || null,
-                    mac_address: this.unifiedForm.mac || null
+                    mac_address: null
                 };
                 const res = await fetch('/api/clients', {
                     method: 'POST',
@@ -738,7 +940,6 @@
                     address: '',
                     group_id: '',
                     metadata: '',
-                    mac: '',
                     detectedType: null,
                     validationError: ''
                 };
