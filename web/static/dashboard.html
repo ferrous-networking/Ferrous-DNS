@@ -418,7 +418,10 @@
                         const queries = await res.json();
                         this.queryTypes = {};
                         queries.forEach(q => {
-                            this.queryTypes[q.record_type] = (this.queryTypes[q.record_type] || 0) + 1
+                            // Only count queries with valid record types
+                            if (q.record_type && q.record_type !== 'undefined') {
+                                this.queryTypes[q.record_type] = (this.queryTypes[q.record_type] || 0) + 1;
+                            }
                         });
                         let cache = 0, upstream = 0;
                         queries.forEach(q => {
@@ -485,16 +488,24 @@
                 if (!this.chartsReady) return;
 
                 try {
-                    if (!this.charts.queryTypes && Object.keys(this.queryTypes).length > 0) {
+                    // Clean up invalid entries
+                    const validTypes = {};
+                    Object.entries(this.queryTypes).forEach(([key, value]) => {
+                        if (key && key !== 'undefined' && key !== 'null' && value > 0) {
+                            validTypes[key] = value;
+                        }
+                    });
+
+                    if (!this.charts.queryTypes && Object.keys(validTypes).length > 0) {
                         // Create chart if it doesn't exist yet
                         const ctx2 = document.getElementById('queryTypesChart');
                         if (ctx2) {
                             this.charts.queryTypes = new Chart(ctx2.getContext('2d'), {
                                 type: 'doughnut',
                                 data: {
-                                    labels: Object.keys(this.queryTypes),
+                                    labels: Object.keys(validTypes),
                                     datasets: [{
-                                        data: Object.values(this.queryTypes),
+                                        data: Object.values(validTypes),
                                         backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#A855F7']
                                     }]
                                 },
@@ -506,10 +517,10 @@
                                 }
                             });
                         }
-                    } else if (this.charts.queryTypes && this.charts.queryTypes.data && this.charts.queryTypes.canvas && Object.keys(this.queryTypes).length > 0) {
+                    } else if (this.charts.queryTypes && this.charts.queryTypes.data && this.charts.queryTypes.canvas && Object.keys(validTypes).length > 0) {
                         // Update existing chart only if canvas is still valid
-                        this.charts.queryTypes.data.labels = Object.keys(this.queryTypes);
-                        this.charts.queryTypes.data.datasets[0].data = Object.values(this.queryTypes);
+                        this.charts.queryTypes.data.labels = Object.keys(validTypes);
+                        this.charts.queryTypes.data.datasets[0].data = Object.values(validTypes);
                         this.charts.queryTypes.update('none');
                     }
                 } catch (e) {
