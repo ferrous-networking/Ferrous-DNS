@@ -950,10 +950,11 @@
 
             async deleteClient(id) {
                 console.log('🗑️ deleteClient called with id:', id);
-                if (!confirm('Delete this client?')) {
-                    console.log('❌ User cancelled delete');
-                    return;
-                }
+                // TEMPORARY: Removed confirmation for testing
+                // if (!confirm('Delete this client?')) {
+                //     console.log('❌ User cancelled delete');
+                //     return;
+                // }
                 try {
                     console.log('📡 Sending DELETE request to /api/clients/' + id);
                     const res = await fetch(`/api/clients/${id}`, {method: 'DELETE'});
@@ -975,7 +976,8 @@
             },
 
             async deleteSubnet(id) {
-                if (!confirm('Delete this subnet?')) return;
+                // TEMPORARY: Removed confirmation for testing
+                // if (!confirm('Delete this subnet?')) return;
                 try {
                     const res = await fetch(`/api/client-subnets/${id}`, {method: 'DELETE'});
                     if (res.ok) {
@@ -1023,10 +1025,11 @@
                     return;
                 }
 
-                if (!confirm(`Delete ${count} selected client${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
-                    console.log('❌ User cancelled bulk delete');
-                    return;
-                }
+                // TEMPORARY: Removed confirmation for testing
+                // if (!confirm(`Delete ${count} selected client${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
+                //     console.log('❌ User cancelled bulk delete');
+                //     return;
+                // }
 
                 try {
                     const batchSize = 10;
@@ -1063,9 +1066,10 @@
                 const count = this.selectedSubnets.length;
                 if (count === 0) return;
 
-                if (!confirm(`Delete ${count} selected subnet${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
-                    return;
-                }
+                // TEMPORARY: Removed confirmation for testing
+                // if (!confirm(`Delete ${count} selected subnet${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
+                //     return;
+                // }
 
                 try {
                     const batchSize = 10;
