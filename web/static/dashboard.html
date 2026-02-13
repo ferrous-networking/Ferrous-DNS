@@ -387,6 +387,9 @@
                     this.chartsReady = true;
                     lucide.createIcons();
 
+                    // Load chart data immediately after charts are ready
+                    this.loadChartsData();
+
                     // Start polling only after charts are fully initialized
                     setTimeout(() => this.startPolling(), 100);
                 }, 500);
