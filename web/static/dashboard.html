@@ -365,15 +365,27 @@
             cacheStats: {cache: 0, upstream: 0},
             queryTypes: {},
             charts: {},
+            chartsReady: false,
+            pollingIntervals: {fast: null, slow: null},
             async init() {
                 this.theme = localStorage.getItem('theme') || 'light';
                 document.documentElement.classList.toggle('dark', this.theme === 'dark');
-                await this.loadAllData();
+
+                // Initial data load (without charts)
+                await this.loadQuickStats();
                 await this.$nextTick();
+
+                // Initialize charts after a delay
                 setTimeout(() => {
                     this.initCharts();
-                    lucide.createIcons()
-                }, 100);
+                    this.chartsReady = true;
+                    lucide.createIcons();
+
+                    // Load charts data once charts are ready
+                    this.loadChartsData();
+                }, 500);
+
+                // Start both polling intervals
                 this.startPolling()
             },
             toggleTheme() {
@@ -384,6 +396,15 @@
             },
             async loadAllData() {
                 await Promise.all([this.loadStats(), this.loadQueryTypes(), this.loadCacheMetrics()])
+            },
+            async loadQuickStats() {
+                // Only load stats and cache metrics (no chart updates)
+                await Promise.all([this.loadStats(), this.loadCacheMetrics()])
+            },
+            async loadChartsData() {
+                // Only load data that updates charts
+                if (!this.chartsReady) return;
+                await this.loadQueryTypes()
             },
             async loadStats() {
                 try {
@@ -417,7 +438,7 @@
                 }
             },
             updateTimeline(queries) {
-                if (!this.charts.timeline) return;
+                if (!this.chartsReady || !this.charts.timeline) return;
 
                 const now = new Date();
                 const currentHour = now.getHours();
@@ -464,6 +485,8 @@
                 this.updateCacheSourceChart();
             },
             updateQueryTypesChart() {
+                if (!this.chartsReady) return;
+
                 try {
                     if (!this.charts.queryTypes && Object.keys(this.queryTypes).length > 0) {
                         // Create chart if it doesn't exist yet
@@ -497,6 +520,8 @@
                 }
             },
             updateCacheSourceChart() {
+                if (!this.chartsReady) return;
+
                 try {
                     if (!this.charts.cacheSource && (this.cacheStats.cache > 0 || this.cacheStats.upstream > 0)) {
                         // Create chart if it doesn't exist yet
@@ -614,7 +639,19 @@
                 }
             },
             startPolling() {
-                setInterval(() => this.loadAllData(), 1000)
+                // Fast polling: Stats and cache metrics every 1 second
+                this.pollingIntervals.fast = setInterval(() => {
+                    this.loadQuickStats()
+                }, 1000);
+
+                // Slow polling: Chart updates every 60 seconds
+                this.pollingIntervals.slow = setInterval(() => {
+                    this.loadChartsData()
+                }, 60000);
+            },
+            stopPolling() {
+                if (this.pollingIntervals.fast) clearInterval(this.pollingIntervals.fast);
+                if (this.pollingIntervals.slow) clearInterval(this.pollingIntervals.slow);
             },
             formatTime(ms) {
                 if (!ms) return '0 ms';
