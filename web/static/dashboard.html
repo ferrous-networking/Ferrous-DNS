@@ -416,6 +416,8 @@
                     const res = await fetch('/api/queries');
                     if (res.ok) {
                         const queries = await res.json();
+                        console.log('📊 Total queries received:', queries.length);
+
                         this.queryTypes = {};
                         queries.forEach(q => {
                             // Only count queries with valid record types
@@ -423,6 +425,7 @@
                                 this.queryTypes[q.record_type] = (this.queryTypes[q.record_type] || 0) + 1;
                             }
                         });
+                        console.log('📊 Query types counted:', this.queryTypes);
                         let cache = 0, upstream = 0;
                         queries.forEach(q => {
                             if (q.blocked) return;
@@ -485,7 +488,10 @@
                 this.updateCacheSourceChart();
             },
             updateQueryTypesChart() {
-                if (!this.chartsReady) return;
+                if (!this.chartsReady) {
+                    console.log('⏸️ Charts not ready yet');
+                    return;
+                }
 
                 try {
                     // Clean up invalid entries
@@ -496,7 +502,11 @@
                         }
                     });
 
+                    console.log('📊 Valid query types for chart:', validTypes);
+                    console.log('📊 Chart exists?', !!this.charts.queryTypes);
+
                     if (!this.charts.queryTypes && Object.keys(validTypes).length > 0) {
+                        console.log('📊 Creating new Query Types chart');
                         // Create chart if it doesn't exist yet
                         const ctx2 = document.getElementById('queryTypesChart');
                         if (ctx2) {
@@ -519,9 +529,17 @@
                         }
                     } else if (this.charts.queryTypes && this.charts.queryTypes.data && this.charts.queryTypes.canvas && Object.keys(validTypes).length > 0) {
                         // Update existing chart only if canvas is still valid
+                        console.log('📊 Updating existing Query Types chart');
                         this.charts.queryTypes.data.labels = Object.keys(validTypes);
                         this.charts.queryTypes.data.datasets[0].data = Object.values(validTypes);
                         this.charts.queryTypes.update('none');
+                    } else {
+                        console.log('📊 Query Types chart update skipped:', {
+                            hasChart: !!this.charts.queryTypes,
+                            hasData: this.charts.queryTypes?.data ? true : false,
+                            hasCanvas: this.charts.queryTypes?.canvas ? true : false,
+                            validTypesCount: Object.keys(validTypes).length
+                        });
                     }
                 } catch (e) {
                     console.error('Error updating query types chart:', e);
