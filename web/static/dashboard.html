@@ -418,6 +418,12 @@
                         const queries = await res.json();
                         console.log('📊 Total queries received:', queries.length);
 
+                        // Debug: show first query structure
+                        if (queries.length > 0) {
+                            console.log('📊 First query example:', queries[0]);
+                            console.log('📊 Available fields:', Object.keys(queries[0]));
+                        }
+
                         this.queryTypes = {};
                         queries.forEach(q => {
                             // Only count queries with valid record types
