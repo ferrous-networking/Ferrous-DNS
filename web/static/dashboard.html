@@ -426,7 +426,7 @@
 
                         this.queryTypes = {};
                         queries.forEach(q => {
-                            this.queryTypes[q.record_type] = (this.queryTypes[q.record_type] || 0) + 1;
+                            this.queryTypes[q.type] = (this.queryTypes[q.type] || 0) + 1;
                         });
                         console.log('📊 Query types counted:', this.queryTypes);
                         let cache = 0, upstream = 0;
