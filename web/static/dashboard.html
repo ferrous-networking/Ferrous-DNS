@@ -598,6 +598,20 @@
             },
             initCharts() {
                 try {
+                    // Destroy existing charts before creating new ones
+                    if (this.charts.timeline) {
+                        this.charts.timeline.destroy();
+                        this.charts.timeline = null;
+                    }
+                    if (this.charts.queryTypes) {
+                        this.charts.queryTypes.destroy();
+                        this.charts.queryTypes = null;
+                    }
+                    if (this.charts.cacheSource) {
+                        this.charts.cacheSource.destroy();
+                        this.charts.cacheSource = null;
+                    }
+
                     const ctx1 = document.getElementById('timelineChart');
                     if (ctx1) {
                         this.charts.timeline = new Chart(ctx1.getContext('2d'), {
