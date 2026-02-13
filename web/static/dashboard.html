@@ -461,22 +461,52 @@
                         const timeline = await res.json();
                         console.log('⏰ Timeline data received:', timeline);
 
-                        // Extract data from buckets - now with blocked/unblocked stats
-                        const totalCounts = timeline.buckets.map(b => b.total);
-                        const blockedCounts = timeline.buckets.map(b => b.blocked);
-                        const unblockedCounts = timeline.buckets.map(b => b.unblocked);
+                        // Generate 24-hour labels for the last 24 hours
+                        const now = new Date();
+                        const hourLabels = [];
+                        const totalCounts = [];
+                        const blockedCounts = [];
+                        const unblockedCounts = [];
 
-                        const hourLabels = timeline.buckets.map(b => {
-                            const date = new Date(b.timestamp);
-                            return date.getHours() + 'h';
+                        // Create a map of timestamp -> data for quick lookup
+                        const dataMap = new Map();
+                        timeline.buckets.forEach(b => {
+                            dataMap.set(b.timestamp, {
+                                total: b.total,
+                                blocked: b.blocked,
+                                unblocked: b.unblocked
+                            });
                         });
+
+                        // Generate last 24 hours of labels and data
+                        for (let i = 23; i >= 0; i--) {
+                            const hourDate = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                            hourDate.setMinutes(0, 0, 0);
+
+                            // Format timestamp to match backend format "YYYY-MM-DD HH:00:00"
+                            const year = hourDate.getFullYear();
+                            const month = String(hourDate.getMonth() + 1).padStart(2, '0');
+                            const day = String(hourDate.getDate()).padStart(2, '0');
+                            const hour = String(hourDate.getHours()).padStart(2, '0');
+                            const timestamp = `${year}-${month}-${day} ${hour}:00:00`;
+
+                            // Label format "HH:00"
+                            hourLabels.push(`${hour}:00`);
+
+                            // Get data from map or use 0
+                            const data = dataMap.get(timestamp) || { total: 0, blocked: 0, unblocked: 0 };
+                            totalCounts.push(data.total);
+                            blockedCounts.push(data.blocked);
+                            unblockedCounts.push(data.unblocked);
+                        }
 
                         console.log('⏰ Timeline chart data:', {
                             labels: hourLabels,
                             total: totalCounts,
                             blocked: blockedCounts,
                             unblocked: unblockedCounts,
-                            totalQueries: totalCounts.reduce((a, b) => a + b, 0)
+                            totalQueries: totalCounts.reduce((a, b) => a + b, 0),
+                            bucketsReceived: timeline.buckets.length
                         });
 
                         // Update chart with total queries
@@ -485,7 +515,7 @@
                             appCharts.timeline.data.labels = hourLabels;
                             appCharts.timeline.data.datasets[0].data = totalCounts;
                             appCharts.timeline.update('none');
-                            console.log('⏰ Timeline chart updated successfully');
+                            console.log('⏰ Timeline chart updated successfully with', hourLabels.length, 'data points');
                         } else {
                             console.log('⏰ Timeline chart not ready:', {
                                 hasChart: !!appCharts.timeline,
