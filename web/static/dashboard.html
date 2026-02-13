@@ -400,17 +400,118 @@
                         const queries = await res.json();
                         this.queryTypes = {};
                         queries.forEach(q => {
-                            this.queryTypes[q.type] = (this.queryTypes[q.type] || 0) + 1
+                            this.queryTypes[q.record_type] = (this.queryTypes[q.record_type] || 0) + 1
                         });
                         let cache = 0, upstream = 0;
                         queries.forEach(q => {
                             if (q.blocked) return;
                             if (q.cache_hit) cache++; else upstream++
                         });
-                        this.cacheStats = {cache, upstream}
+                        this.cacheStats = {cache, upstream};
+
+                        // Process timeline data (queries per hour for last 24 hours)
+                        this.updateTimeline(queries);
                     }
                 } catch (e) {
                     console.error(e)
+                }
+            },
+            updateTimeline(queries) {
+                if (!this.charts.timeline) return;
+
+                const now = new Date();
+                const currentHour = now.getHours();
+                const hoursData = Array(24).fill(0);
+
+                // Count queries per hour
+                queries.forEach(q => {
+                    if (!q.timestamp) return;
+                    try {
+                        // Parse timestamp format "YYYY-MM-DD HH:MM:SS"
+                        const [datePart, timePart] = q.timestamp.split(' ');
+                        if (!timePart) return;
+                        const hour = parseInt(timePart.split(':')[0]);
+
+                        // Parse full date to check if within last 24h
+                        const queryDate = new Date(q.timestamp.replace(' ', 'T'));
+                        const hoursDiff = (now - queryDate) / (1000 * 60 * 60);
+
+                        if (hoursDiff >= 0 && hoursDiff < 24) {
+                            // Map to correct position in 24h array
+                            const hoursAgo = Math.floor(hoursDiff);
+                            const arrayIndex = 23 - hoursAgo;
+                            if (arrayIndex >= 0 && arrayIndex < 24) {
+                                hoursData[arrayIndex]++;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error parsing timestamp:', q.timestamp, e);
+                    }
+                });
+
+                // Update chart
+                this.charts.timeline.data.datasets[0].data = hoursData;
+                this.charts.timeline.update();
+
+                // Update other charts
+                this.updateQueryTypesChart();
+                this.updateCacheSourceChart();
+            },
+            updateQueryTypesChart() {
+                if (!this.charts.queryTypes && Object.keys(this.queryTypes).length > 0) {
+                    // Create chart if it doesn't exist yet
+                    const ctx2 = document.getElementById('queryTypesChart');
+                    if (ctx2) {
+                        this.charts.queryTypes = new Chart(ctx2.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(this.queryTypes),
+                                datasets: [{
+                                    data: Object.values(this.queryTypes),
+                                    backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#A855F7']
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                aspectRatio: 1.5,
+                                plugins: {legend: {position: 'right'}}
+                            }
+                        });
+                    }
+                } else if (this.charts.queryTypes && Object.keys(this.queryTypes).length > 0) {
+                    // Update existing chart
+                    this.charts.queryTypes.data.labels = Object.keys(this.queryTypes);
+                    this.charts.queryTypes.data.datasets[0].data = Object.values(this.queryTypes);
+                    this.charts.queryTypes.update();
+                }
+            },
+            updateCacheSourceChart() {
+                if (!this.charts.cacheSource && (this.cacheStats.cache > 0 || this.cacheStats.upstream > 0)) {
+                    // Create chart if it doesn't exist yet
+                    const ctx3 = document.getElementById('cacheSourceChart');
+                    if (ctx3) {
+                        this.charts.cacheSource = new Chart(ctx3.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['⚡ Cache', '🌐 Upstream'],
+                                datasets: [{
+                                    data: [this.cacheStats.cache, this.cacheStats.upstream],
+                                    backgroundColor: ['#A855F7', '#3B82F6']
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                aspectRatio: 1.5,
+                                plugins: {legend: {position: 'right'}}
+                            }
+                        });
+                    }
+                } else if (this.charts.cacheSource && (this.cacheStats.cache > 0 || this.cacheStats.upstream > 0)) {
+                    // Update existing chart
+                    this.charts.cacheSource.data.datasets[0].data = [this.cacheStats.cache, this.cacheStats.upstream];
+                    this.charts.cacheSource.update();
                 }
             },
             async loadCacheMetrics() {
