@@ -265,42 +265,40 @@
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px">
         <div class="card-stat">
-            <div style="display:flex;align-items:center;justify-between;margin-bottom:12px">
-                <div style="padding:12px;border-radius:8px;background:rgba(59,130,246,0.1)"><i data-lucide="package"
-                                                                                               style="width:24px;height:24px;color:#3B82F6"></i>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                <div style="padding:12px;border-radius:8px;background:rgba(59,130,246,0.1)">
+                    <i data-lucide="package" style="width:24px;height:24px;color:#3B82F6"></i>
                 </div>
+                <p style="font-size:14px;font-weight:500;color:var(--text-secondary)">Total Queries</p>
             </div>
-            <p style="font-size:14px;margin-bottom:4px;font-weight:500;color:var(--text-secondary)">Total Queries</p>
             <p style="font-size:32px;font-weight:700;color:var(--text-primary)" x-text="stats.queries_total||0">0</p>
         </div>
         <div class="card-stat">
-            <div style="display:flex;align-items:center;justify-between;margin-bottom:12px">
-                <div style="padding:12px;border-radius:8px;background:rgba(239,68,68,0.1)"><i data-lucide="shield-ban"
-                                                                                              style="width:24px;height:24px;color:#EF4444"></i>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                <div style="padding:12px;border-radius:8px;background:rgba(239,68,68,0.1)">
+                    <i data-lucide="shield-ban" style="width:24px;height:24px;color:#EF4444"></i>
                 </div>
+                <p style="font-size:14px;font-weight:500;color:var(--text-secondary)">Blocked</p>
             </div>
-            <p style="font-size:14px;margin-bottom:4px;font-weight:500;color:var(--text-secondary)">Blocked</p>
             <p style="font-size:32px;font-weight:700;color:#EF4444" x-text="stats.queries_blocked||0">0</p>
         </div>
         <div class="card-stat">
-            <div style="display:flex;align-items:center;justify-between;margin-bottom:12px">
-                <div style="padding:12px;border-radius:8px;background:rgba(168,85,247,0.1)"><i data-lucide="gauge"
-                                                                                               style="width:24px;height:24px;color:#A855F7"></i>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                <div style="padding:12px;border-radius:8px;background:rgba(168,85,247,0.1)">
+                    <i data-lucide="gauge" style="width:24px;height:24px;color:#A855F7"></i>
                 </div>
+                <p style="font-size:14px;font-weight:500;color:var(--text-secondary)">Avg Query Time</p>
             </div>
-            <p style="font-size:14px;margin-bottom:4px;font-weight:500;color:var(--text-secondary)">Avg Query Time</p>
-            <p style="font-size:32px;font-weight:700;color:#A855F7" x-text="formatTime(stats.avg_query_time_ms||0)">0
-                ms</p>
+            <p style="font-size:32px;font-weight:700;color:#A855F7" x-text="formatTime(stats.avg_query_time_ms||0)">0 ms</p>
         </div>
         <div class="card-stat">
-            <div style="display:flex;align-items:center;justify-between;margin-bottom:12px">
-                <div style="padding:12px;border-radius:8px;background:rgba(16,185,129,0.1)"><i data-lucide="zap"
-                                                                                               style="width:24px;height:24px;color:#10B981"></i>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                <div style="padding:12px;border-radius:8px;background:rgba(16,185,129,0.1)">
+                    <i data-lucide="zap" style="width:24px;height:24px;color:#10B981"></i>
                 </div>
+                <p style="font-size:14px;font-weight:500;color:var(--text-secondary)">⚡ Cache Time</p>
             </div>
-            <p style="font-size:14px;margin-bottom:4px;font-weight:500;color:var(--text-secondary)">⚡ Cache Time</p>
-            <p style="font-size:32px;font-weight:700;color:#10B981" x-text="formatTime(stats.avg_cache_time_ms||0)">0
-                ms</p>
+            <p style="font-size:32px;font-weight:700;color:#10B981" x-text="formatTime(stats.avg_cache_time_ms||0)">0 ms</p>
         </div>
     </div>
     <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;color:var(--text-primary)">⚡ Cache Performance</h2>
