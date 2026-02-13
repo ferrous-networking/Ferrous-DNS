@@ -438,6 +438,28 @@ impl QueryLogRepository for SqliteQueryLogRepository {
         debug!(buckets = timeline.len(), "Timeline fetched successfully");
         Ok(timeline)
     }
+
+    #[instrument(skip(self))]
+    async fn count_queries_since(&self, seconds_ago: i64) -> Result<u64, DomainError> {
+        debug!(seconds_ago = seconds_ago, "Counting queries since N seconds ago");
+
+        let row = sqlx::query(
+            "SELECT COUNT(*) as count
+             FROM query_log
+             WHERE created_at >= datetime('now', '-' || ? || ' seconds')"
+        )
+        .bind(seconds_ago)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to count queries");
+            DomainError::InvalidDomainName(format!("Database error: {}", e))
+        })?;
+
+        let count = row.get::<i64, _>("count") as u64;
+        debug!(count = count, "Query count retrieved");
+        Ok(count)
+    }
 }
 
 static START_TIME: std::sync::OnceLock<SystemTime> = std::sync::OnceLock::new();

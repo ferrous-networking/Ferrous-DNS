@@ -22,4 +22,5 @@ pub trait QueryLogRepository: Send + Sync {
         period_hours: u32,
         granularity: &str,
     ) -> Result<Vec<TimelineBucket>, DomainError>;
+    async fn count_queries_since(&self, seconds_ago: i64) -> Result<u64, DomainError>;
 }

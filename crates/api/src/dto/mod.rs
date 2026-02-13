@@ -7,6 +7,7 @@ pub mod group;
 pub mod hostname;
 pub mod local_record;
 pub mod query;
+pub mod rate;
 pub mod stats;
 pub mod timeline;
 
@@ -22,5 +23,6 @@ pub use config::*;
 pub use group::{AssignGroupRequest, CreateGroupRequest, GroupResponse, UpdateGroupRequest};
 pub use hostname::HostnameResponse;
 pub use query::QueryResponse;
+pub use rate::{QueryRateResponse, RateQuery};
 pub use stats::{StatsResponse, TopType, TypeDistribution};
 pub use timeline::{TimelineBucket, TimelineQuery, TimelineResponse};

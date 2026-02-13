@@ -23,4 +23,4 @@ pub use groups::{
     AssignClientGroupUseCase, CreateGroupUseCase, DeleteGroupUseCase, GetGroupsUseCase,
     UpdateGroupUseCase,
 };
-pub use queries::{GetQueryStatsUseCase, GetRecentQueriesUseCase, GetTimelineUseCase, Granularity};
+pub use queries::{GetQueryStatsUseCase, GetRecentQueriesUseCase, GetTimelineUseCase, GetQueryRateUseCase, Granularity, RateUnit, QueryRate};
