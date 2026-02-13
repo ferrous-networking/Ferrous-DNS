@@ -366,6 +366,10 @@
             <div class="status-indicator"></div>
             <span>Active</span>
         </div>
+        <div class="status-item">
+            <i data-lucide="layers" style="width:12px;height:12px;color:var(--text-tertiary)"></i>
+            <span x-text="`${groups.length} ${groups.length === 1 ? 'group' : 'groups'}`"></span>
+        </div>
     </div>
     <nav style="flex:1;padding:16px 0">
         <div class="nav-section">
