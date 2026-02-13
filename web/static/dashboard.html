@@ -371,8 +371,8 @@
                 this.theme = localStorage.getItem('theme') || 'light';
                 document.documentElement.classList.toggle('dark', this.theme === 'dark');
 
-                // Initial data load (without charts)
-                await this.loadQuickStats();
+                // Initial data load (ALL data including queries for chart creation)
+                await this.loadAllData();
                 await this.$nextTick();
 
                 // Initialize charts after a delay
@@ -380,9 +380,6 @@
                     this.initCharts();
                     this.chartsReady = true;
                     lucide.createIcons();
-
-                    // Load charts data once charts are ready
-                    this.loadChartsData();
                 }, 500);
 
                 // Start both polling intervals
