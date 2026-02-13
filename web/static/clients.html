@@ -47,7 +47,9 @@
             width: 260px;
             background: var(--bg-secondary);
             border-right: 1px solid var(--border-color);
-            padding: 20px
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto
         }
 
         .card {
@@ -143,32 +145,200 @@
             background: rgba(249, 115, 22, 0.15);
             color: #f97316
         }
+
+        .logo-text h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            color: var(--text-tertiary)
+        }
+
+        .status-box {
+            margin: 0 16px 16px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-success)
+        }
+
+        .nav-section {
+            margin-bottom: 24px
+        }
+
+        .nav-section-title {
+            padding: 8px 16px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            text-transform: uppercase
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all .2s
+        }
+
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary)
+        }
+
+        .nav-item.active {
+            background: var(--bg-tertiary);
+            color: var(--color-primary);
+            font-weight: 600;
+            border-left: 3px solid var(--color-primary)
+        }
+
+        .nav-icon {
+            width: 18px;
+            height: 18px
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid var(--border-color)
+        }
+
+        .theme-btn {
+            width: 100%;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-secondary)
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 24px 16px 16px
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 8px
+        }
     </style>
 </head>
 
 <body x-data="app()" x-init="init()">
 
 <aside class="sidebar">
-    <div style="margin-bottom:24px">
-        <h1 style="font-size:20px;font-weight:700;margin-bottom:4px">Ferrous DNS</h1>
-        <p style="font-size:11px;color:var(--text-tertiary)">Network Management</p>
+    <div class="logo-container">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        <div class="logo-text">
+            <h1>Ferrous DNS</h1>
+            <span class="logo-subtitle">High-Performance DNS</span>
+        </div>
     </div>
 
-    <nav style="display:flex;flex-direction:column;gap:8px">
-        <a href="dashboard.html" style="padding:10px 12px;border-radius:8px;color:var(--text-secondary);text-decoration:none">
-            Dashboard
-        </a>
-        <a href="clients.html" style="padding:10px 12px;border-radius:8px;background:var(--bg-tertiary);color:var(--text-primary);text-decoration:none;font-weight:500">
-            Clients
-        </a>
-        <a href="groups.html" style="padding:10px 12px;border-radius:8px;color:var(--text-secondary);text-decoration:none">
-            Groups
-        </a>
+    <div class="status-box">
+        <div class="status-header">
+            <i data-lucide="activity" style="width:16px;height:16px"></i>
+            <span>Status</span>
+        </div>
+        <div class="status-item">
+            <div class="status-indicator"></div>
+            <span>Active</span>
+        </div>
+        <div class="status-item">
+            <i data-lucide="users" style="width:14px;height:14px"></i>
+            <span x-text="(stats.total_clients || 0) + ' clients'">0 clients</span>
+        </div>
+    </div>
+
+    <nav style="flex:1;padding:16px 0">
+        <div class="nav-section">
+            <div class="nav-section-title">MAIN</div>
+            <a href="/dashboard.html" class="nav-item">
+                <i data-lucide="layout-dashboard" class="nav-icon"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/queries.html" class="nav-item">
+                <i data-lucide="file-text" class="nav-icon"></i>
+                <span>Query Log</span>
+            </a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">NETWORK MANAGEMENT</div>
+            <a href="/clients.html" class="nav-item active">
+                <i data-lucide="users" class="nav-icon"></i>
+                <span>Clients</span>
+            </a>
+            <a href="/groups.html" class="nav-item">
+                <i data-lucide="layers" class="nav-icon"></i>
+                <span>Groups</span>
+            </a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">DNS CONTROL</div>
+            <a href="/local-dns-settings.html" class="nav-item">
+                <i data-lucide="server" class="nav-icon"></i>
+                <span>Local DNS</span>
+            </a>
+            <a href="/settings.html" class="nav-item">
+                <i data-lucide="settings" class="nav-icon"></i>
+                <span>Settings</span>
+            </a>
+        </div>
     </nav>
 
-    <div style="margin-top:auto;padding-top:24px">
-        <button @click="toggleTheme()" class="btn" style="width:100%;background:var(--bg-tertiary)">
-            Toggle Theme
+    <div class="sidebar-footer">
+        <button @click="toggleTheme()" class="theme-btn">
+            <i data-lucide="sun" x-show="theme==='light'" style="width:16px;height:16px"></i>
+            <i data-lucide="moon" x-show="theme==='dark'" style="width:16px;height:16px"></i>
+            <span>Theme</span>
         </button>
     </div>
 </aside>
@@ -249,7 +419,7 @@
             </div>
 
             <button type="submit"
-                    :disabled="!form.type || form.type==='mac' || form.error"
+                    :disabled="!form.type || form.type==='mac'"
                     class="btn btn-primary">
                 <span x-text="getButtonText()">Submit</span>
             </button>
