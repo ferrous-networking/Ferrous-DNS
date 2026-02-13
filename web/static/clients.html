@@ -433,7 +433,7 @@
                         <span x-text="getTypeLabel()"></span>
                     </div>
 
-                    <form @submit.prevent="submitUnifiedForm()" style="display:flex;flex-direction:column;gap:16px">
+                    <form @submit.prevent="console.log('📝 FORM SUBMIT EVENT!'); submitUnifiedForm()" style="display:flex;flex-direction:column;gap:16px">
                         <!-- Address Input with Autocomplete -->
                         <div style="position:relative">
                             <label class="form-label" style="font-size:14px;font-weight:500;color:var(--text-primary);display:block;margin-bottom:6px">
@@ -511,6 +511,7 @@
 
                         <!-- Submit Button -->
                         <button type="submit"
+                                @click="console.log('🖱️ BUTTON CLICKED! detectedType:', unifiedForm.detectedType)"
                                 :disabled="!unifiedForm.detectedType || unifiedForm.detectedType === 'mac' || unifiedForm.validationError"
                                 class="btn btn-primary"
                                 :style="'padding:10px 16px;color:white;border:none;border-radius:8px;font-weight:500;cursor:pointer;margin-top:8px;font-size:14px;background:' + getSubmitButtonColor() + ';opacity:' + (!unifiedForm.detectedType || unifiedForm.detectedType === 'mac' || unifiedForm.validationError ? '0.5' : '1')">
