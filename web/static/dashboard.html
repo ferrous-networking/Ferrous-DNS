@@ -450,9 +450,15 @@
                 }
             },
             updateTimeline(queries) {
-                if (!this.chartsReady || !appCharts.timeline) return;
+                console.log('⏰ updateTimeline called with', queries.length, 'queries', {
+                    chartsReady: this.chartsReady,
+                    hasTimeline: !!appCharts.timeline
+                });
 
-                console.log('⏰ updateTimeline called with', queries.length, 'queries');
+                if (!this.chartsReady || !appCharts.timeline) {
+                    console.log('⏰ Timeline update SKIPPED - charts not ready or timeline missing');
+                    return;
+                }
 
                 const now = new Date();
                 const currentHour = now.getHours();
@@ -633,6 +639,7 @@
                 }
             },
             initCharts() {
+                console.log('📈 initCharts() called');
                 try {
                     // Destroy existing charts before creating new ones
                     if (appCharts.timeline) {
@@ -649,6 +656,7 @@
                     }
 
                     const ctx1 = document.getElementById('timelineChart');
+                    console.log('📈 Timeline canvas element:', ctx1);
                     if (ctx1) {
                         appCharts.timeline = new Chart(ctx1.getContext('2d'), {
                             type: 'line',
@@ -670,7 +678,10 @@
                                 plugins: {legend: {position: 'top'}},
                                 scales: {y: {beginAtZero: true}}
                             }
-                        })
+                        });
+                        console.log('📈 Timeline chart created successfully:', appCharts.timeline);
+                    } else {
+                        console.log('📈 Timeline chart NOT created - canvas element missing');
                     }
                     const ctx2 = document.getElementById('queryTypesChart');
                     if (ctx2 && Object.keys(this.queryTypes).length > 0) {
