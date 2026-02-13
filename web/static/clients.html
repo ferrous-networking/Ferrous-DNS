@@ -711,7 +711,6 @@
                     lucide.createIcons();
                     console.log('✅ Lucide icons initialized');
                 }, 100);
-                this.startPolling();
             },
 
             toggleTheme() {
@@ -719,10 +718,6 @@
                 localStorage.setItem('theme', this.theme);
                 document.documentElement.classList.toggle('dark', this.theme === 'dark');
                 setTimeout(() => lucide.createIcons(), 50);
-            },
-
-            startPolling() {
-                setInterval(() => this.loadStats(), 10000);
             },
 
             async loadAll() {
