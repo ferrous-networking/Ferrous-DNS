@@ -624,6 +624,7 @@ name = "ferrous-dns-application"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "ferrous-dns-domain",
  "ipnetwork",
  "tokio",
