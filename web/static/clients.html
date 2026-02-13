@@ -701,16 +701,10 @@
             },
 
             async init() {
-                console.log('🚀 Alpine.js init() called');
                 this.theme = localStorage.getItem('theme') || 'light';
                 document.documentElement.classList.toggle('dark', this.theme === 'dark');
-                console.log('📡 Loading all data...');
                 await this.loadAll();
-                console.log('✅ Data loaded, initializing Lucide icons...');
-                setTimeout(() => {
-                    lucide.createIcons();
-                    console.log('✅ Lucide icons initialized');
-                }, 100);
+                setTimeout(() => lucide.createIcons(), 100);
             },
 
             toggleTheme() {
@@ -949,35 +943,24 @@
             },
 
             async deleteClient(id) {
-                console.log('🗑️ deleteClient called with id:', id);
-                // TEMPORARY: Removed confirmation for testing
-                // if (!confirm('Delete this client?')) {
-                //     console.log('❌ User cancelled delete');
-                //     return;
-                // }
+                if (!confirm('Delete this client?')) return;
                 try {
-                    console.log('📡 Sending DELETE request to /api/clients/' + id);
                     const res = await fetch(`/api/clients/${id}`, {method: 'DELETE'});
-                    console.log('📡 Response status:', res.status);
                     if (res.ok) {
-                        console.log('✅ Delete successful, reloading data...');
                         await this.loadAll();
                         setTimeout(() => lucide.createIcons(), 50);
                         alert('Client deleted!');
                     } else {
-                        const errorText = await res.text();
-                        console.error('❌ Delete failed:', errorText);
-                        alert('Failed: ' + errorText);
+                        alert('Failed: ' + await res.text());
                     }
                 } catch (e) {
-                    console.error('💥 Exception during delete:', e);
+                    console.error(e);
                     alert('Error deleting client');
                 }
             },
 
             async deleteSubnet(id) {
-                // TEMPORARY: Removed confirmation for testing
-                // if (!confirm('Delete this subnet?')) return;
+                if (!confirm('Delete this subnet?')) return;
                 try {
                     const res = await fetch(`/api/client-subnets/${id}`, {method: 'DELETE'});
                     if (res.ok) {
@@ -1019,17 +1002,11 @@
 
             async bulkDeleteClients() {
                 const count = this.selectedClients.length;
-                console.log('🗑️ bulkDeleteClients called, count:', count, 'ids:', this.selectedClients);
-                if (count === 0) {
-                    console.log('⚠️ No clients selected');
+                if (count === 0) return;
+
+                if (!confirm(`Delete ${count} selected client${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
                     return;
                 }
-
-                // TEMPORARY: Removed confirmation for testing
-                // if (!confirm(`Delete ${count} selected client${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
-                //     console.log('❌ User cancelled bulk delete');
-                //     return;
-                // }
 
                 try {
                     const batchSize = 10;
@@ -1066,10 +1043,9 @@
                 const count = this.selectedSubnets.length;
                 if (count === 0) return;
 
-                // TEMPORARY: Removed confirmation for testing
-                // if (!confirm(`Delete ${count} selected subnet${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
-                //     return;
-                // }
+                if (!confirm(`Delete ${count} selected subnet${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
+                    return;
+                }
 
                 try {
                     const batchSize = 10;
