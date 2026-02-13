@@ -449,69 +449,83 @@
                     }
                 });
 
-                // Update chart
-                this.charts.timeline.data.datasets[0].data = hoursData;
-                this.charts.timeline.update();
+                // Update chart safely
+                try {
+                    if (this.charts.timeline && this.charts.timeline.data && this.charts.timeline.data.datasets[0]) {
+                        this.charts.timeline.data.datasets[0].data = hoursData;
+                        this.charts.timeline.update('none');
+                    }
+                } catch (e) {
+                    console.error('Error updating timeline chart:', e);
+                }
 
                 // Update other charts
                 this.updateQueryTypesChart();
                 this.updateCacheSourceChart();
             },
             updateQueryTypesChart() {
-                if (!this.charts.queryTypes && Object.keys(this.queryTypes).length > 0) {
-                    // Create chart if it doesn't exist yet
-                    const ctx2 = document.getElementById('queryTypesChart');
-                    if (ctx2) {
-                        this.charts.queryTypes = new Chart(ctx2.getContext('2d'), {
-                            type: 'doughnut',
-                            data: {
-                                labels: Object.keys(this.queryTypes),
-                                datasets: [{
-                                    data: Object.values(this.queryTypes),
-                                    backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#A855F7']
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: true,
-                                aspectRatio: 1.5,
-                                plugins: {legend: {position: 'right'}}
-                            }
-                        });
+                try {
+                    if (!this.charts.queryTypes && Object.keys(this.queryTypes).length > 0) {
+                        // Create chart if it doesn't exist yet
+                        const ctx2 = document.getElementById('queryTypesChart');
+                        if (ctx2) {
+                            this.charts.queryTypes = new Chart(ctx2.getContext('2d'), {
+                                type: 'doughnut',
+                                data: {
+                                    labels: Object.keys(this.queryTypes),
+                                    datasets: [{
+                                        data: Object.values(this.queryTypes),
+                                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#A855F7']
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: true,
+                                    aspectRatio: 1.5,
+                                    plugins: {legend: {position: 'right'}}
+                                }
+                            });
+                        }
+                    } else if (this.charts.queryTypes && this.charts.queryTypes.data && Object.keys(this.queryTypes).length > 0) {
+                        // Update existing chart
+                        this.charts.queryTypes.data.labels = Object.keys(this.queryTypes);
+                        this.charts.queryTypes.data.datasets[0].data = Object.values(this.queryTypes);
+                        this.charts.queryTypes.update('none');
                     }
-                } else if (this.charts.queryTypes && Object.keys(this.queryTypes).length > 0) {
-                    // Update existing chart
-                    this.charts.queryTypes.data.labels = Object.keys(this.queryTypes);
-                    this.charts.queryTypes.data.datasets[0].data = Object.values(this.queryTypes);
-                    this.charts.queryTypes.update();
+                } catch (e) {
+                    console.error('Error updating query types chart:', e);
                 }
             },
             updateCacheSourceChart() {
-                if (!this.charts.cacheSource && (this.cacheStats.cache > 0 || this.cacheStats.upstream > 0)) {
-                    // Create chart if it doesn't exist yet
-                    const ctx3 = document.getElementById('cacheSourceChart');
-                    if (ctx3) {
-                        this.charts.cacheSource = new Chart(ctx3.getContext('2d'), {
-                            type: 'doughnut',
-                            data: {
-                                labels: ['⚡ Cache', '🌐 Upstream'],
-                                datasets: [{
-                                    data: [this.cacheStats.cache, this.cacheStats.upstream],
-                                    backgroundColor: ['#A855F7', '#3B82F6']
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: true,
-                                aspectRatio: 1.5,
-                                plugins: {legend: {position: 'right'}}
-                            }
-                        });
+                try {
+                    if (!this.charts.cacheSource && (this.cacheStats.cache > 0 || this.cacheStats.upstream > 0)) {
+                        // Create chart if it doesn't exist yet
+                        const ctx3 = document.getElementById('cacheSourceChart');
+                        if (ctx3) {
+                            this.charts.cacheSource = new Chart(ctx3.getContext('2d'), {
+                                type: 'doughnut',
+                                data: {
+                                    labels: ['⚡ Cache', '🌐 Upstream'],
+                                    datasets: [{
+                                        data: [this.cacheStats.cache, this.cacheStats.upstream],
+                                        backgroundColor: ['#A855F7', '#3B82F6']
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: true,
+                                    aspectRatio: 1.5,
+                                    plugins: {legend: {position: 'right'}}
+                                }
+                            });
+                        }
+                    } else if (this.charts.cacheSource && this.charts.cacheSource.data && (this.cacheStats.cache > 0 || this.cacheStats.upstream > 0)) {
+                        // Update existing chart
+                        this.charts.cacheSource.data.datasets[0].data = [this.cacheStats.cache, this.cacheStats.upstream];
+                        this.charts.cacheSource.update('none');
                     }
-                } else if (this.charts.cacheSource && (this.cacheStats.cache > 0 || this.cacheStats.upstream > 0)) {
-                    // Update existing chart
-                    this.charts.cacheSource.data.datasets[0].data = [this.cacheStats.cache, this.cacheStats.upstream];
-                    this.charts.cacheSource.update();
+                } catch (e) {
+                    console.error('Error updating cache source chart:', e);
                 }
             },
             async loadCacheMetrics() {
