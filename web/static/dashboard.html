@@ -290,7 +290,8 @@
                 </div>
                 <p style="font-size:14px;font-weight:500;color:var(--text-secondary)">Avg Query Time</p>
             </div>
-            <p style="font-size:32px;font-weight:700;color:#A855F7" x-text="formatTime(stats.avg_query_time_ms||0)">0 ms</p>
+            <p style="font-size:32px;font-weight:700;color:#A855F7" x-text="formatTime(stats.avg_query_time_ms||0)">0
+                ms</p>
         </div>
         <div class="card-stat">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
@@ -299,7 +300,8 @@
                 </div>
                 <p style="font-size:14px;font-weight:500;color:var(--text-secondary)">Cache Time</p>
             </div>
-            <p style="font-size:32px;font-weight:700;color:#10B981" x-text="formatTime(stats.avg_cache_time_ms||0)">0 ms</p>
+            <p style="font-size:32px;font-weight:700;color:#10B981" x-text="formatTime(stats.avg_cache_time_ms||0)">0
+                ms</p>
         </div>
     </div>
     <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;color:var(--text-primary)">Cache Performance</h2>
@@ -516,7 +518,7 @@
                             }
 
                             // Get data from map or use 0
-                            const data = dataMap.get(timeKey) || { total: 0, blocked: 0, unblocked: 0 };
+                            const data = dataMap.get(timeKey) || {total: 0, blocked: 0, unblocked: 0};
                             totalCounts.push(data.total);
                             blockedCounts.push(data.blocked);
                             unblockedCounts.push(data.unblocked);
@@ -657,7 +659,7 @@
                                 labels: Array.from({length: 96}, (_, i) => {
                                     const mins = (i * 15) % 60;
                                     // Show label ONLY for :00 (full hours), empty for :15, :30, :45
-                                    return mins === 0 ? `${Math.floor(i/4)}:00` : '';
+                                    return mins === 0 ? `${Math.floor(i / 4)}:00` : '';
                                 }),
                                 datasets: [{
                                     label: 'Blocked',
@@ -687,7 +689,7 @@
                                     legend: {position: 'top'},
                                     tooltip: {
                                         callbacks: {
-                                            title: function(context) {
+                                            title: function (context) {
                                                 // Show actual time in tooltip
                                                 const index = context[0].dataIndex;
                                                 const minsAgo = (95 - index) * 15;
