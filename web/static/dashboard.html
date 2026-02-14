@@ -477,10 +477,19 @@
                         const blockedCounts = [];
                         const unblockedCounts = [];
 
-                        // Create a map of timestamp -> data for quick lookup
+                        // Create a map using Unix timestamps as keys (timezone-agnostic)
                         const dataMap = new Map();
                         timeline.buckets.forEach(b => {
-                            dataMap.set(b.timestamp, {
+                            // Parse backend timestamp as UTC (backend uses SQLite datetime which is UTC)
+                            // Convert "2026-02-14 14:15:00" to "2026-02-14T14:15:00Z" for proper UTC parsing
+                            const utcTime = new Date(b.timestamp.replace(' ', 'T') + 'Z');
+
+                            // Round to 15-min boundary for consistent matching
+                            utcTime.setUTCMinutes(Math.floor(utcTime.getUTCMinutes() / 15) * 15, 0, 0);
+
+                            // Use Unix timestamp (milliseconds since epoch) as key - timezone-agnostic
+                            const timeKey = utcTime.getTime();
+                            dataMap.set(timeKey, {
                                 total: b.total,
                                 blocked: b.blocked,
                                 unblocked: b.unblocked
@@ -489,29 +498,25 @@
 
                         // Generate last 24 hours of labels and data (96 intervals of 15 minutes)
                         for (let i = 95; i >= 0; i--) {
-                            const intervalDate = new Date(now.getTime() - (i * 15 * 60 * 1000));
+                            const bucketTime = new Date(now.getTime() - (i * 15 * 60 * 1000));
 
                             // Round down to nearest 15 minutes
-                            const minutes = Math.floor(intervalDate.getMinutes() / 15) * 15;
-                            intervalDate.setMinutes(minutes, 0, 0);
+                            bucketTime.setMinutes(Math.floor(bucketTime.getMinutes() / 15) * 15, 0, 0);
 
-                            // Format timestamp to match backend format "YYYY-MM-DD HH:MM:00"
-                            const year = intervalDate.getFullYear();
-                            const month = String(intervalDate.getMonth() + 1).padStart(2, '0');
-                            const day = String(intervalDate.getDate()).padStart(2, '0');
-                            const hour = String(intervalDate.getHours()).padStart(2, '0');
-                            const minute = String(intervalDate.getMinutes()).padStart(2, '0');
-                            const timestamp = `${year}-${month}-${day} ${hour}:${minute}:00`;
+                            // Use Unix timestamp for lookup (timezone-agnostic)
+                            const timeKey = bucketTime.getTime();
 
-                            // Label format - show only full hours (:00), grid lines still every 30min
-                            if (minute === '00') {
+                            // Label format - show only full hours (:00) using local time for display
+                            const hour = bucketTime.getHours();
+                            const minute = bucketTime.getMinutes();
+                            if (minute === 0) {
                                 timeLabels.push(`${hour}:00`);
                             } else {
                                 timeLabels.push(''); // Empty label for :15, :30, :45 to reduce clutter
                             }
 
                             // Get data from map or use 0
-                            const data = dataMap.get(timestamp) || { total: 0, blocked: 0, unblocked: 0 };
+                            const data = dataMap.get(timeKey) || { total: 0, blocked: 0, unblocked: 0 };
                             totalCounts.push(data.total);
                             blockedCounts.push(data.blocked);
                             unblockedCounts.push(data.unblocked);
