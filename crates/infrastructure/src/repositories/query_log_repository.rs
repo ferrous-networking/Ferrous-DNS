@@ -237,14 +237,18 @@ impl QueryLogRepository for SqliteQueryLogRepository {
     }
 
     #[instrument(skip(self))]
-    async fn get_recent(&self, limit: u32) -> Result<Vec<QueryLog>, DomainError> {
-        debug!(limit = limit, "Fetching recent queries");
+    async fn get_recent(&self, limit: u32, period_hours: f32) -> Result<Vec<QueryLog>, DomainError> {
+        debug!(limit = limit, period_hours = period_hours, "Fetching recent queries with time filter");
 
         let rows = sqlx::query(
             "SELECT id, domain, record_type, client_ip, blocked, response_time_ms, cache_hit, cache_refresh, dnssec_status, upstream_server, response_status, query_source,
                     datetime(created_at) as created_at
-             FROM query_log ORDER BY created_at DESC LIMIT ?",
+             FROM query_log
+             WHERE created_at >= datetime('now', '-' || ? || ' hours')
+             ORDER BY created_at DESC
+             LIMIT ?",
         )
+        .bind(period_hours)
         .bind(limit as i64)
         .fetch_all(&self.pool)
         .await
@@ -298,8 +302,8 @@ impl QueryLogRepository for SqliteQueryLogRepository {
     }
 
     #[instrument(skip(self))]
-    async fn get_stats(&self) -> Result<QueryStats, DomainError> {
-        debug!("Fetching query statistics with Phase 4 analytics (optimized single-pass)");
+    async fn get_stats(&self, period_hours: f32) -> Result<QueryStats, DomainError> {
+        debug!(period_hours = period_hours, "Fetching query statistics with Phase 4 analytics (optimized single-pass)");
 
         let row = sqlx::query(
             "SELECT
@@ -310,8 +314,11 @@ impl QueryLogRepository for SqliteQueryLogRepository {
                 AVG(response_time_ms) as avg_time,
                 AVG(CASE WHEN cache_hit = 1 THEN response_time_ms END) as avg_cache_time,
                 AVG(CASE WHEN cache_hit = 0 AND blocked = 0 THEN response_time_ms END) as avg_upstream_time
-             FROM query_log WHERE response_time_ms IS NOT NULL",
+             FROM query_log
+             WHERE response_time_ms IS NOT NULL
+               AND created_at >= datetime('now', '-' || ? || ' hours')",
         )
+        .bind(period_hours)
         .fetch_one(&self.pool)
         .await
         .map_err(|e| {
@@ -328,8 +335,12 @@ impl QueryLogRepository for SqliteQueryLogRepository {
         };
 
         let type_rows = sqlx::query(
-            "SELECT record_type, COUNT(*) as count FROM query_log GROUP BY record_type",
+            "SELECT record_type, COUNT(*) as count
+             FROM query_log
+             WHERE created_at >= datetime('now', '-' || ? || ' hours')
+             GROUP BY record_type",
         )
+        .bind(period_hours)
         .fetch_all(&self.pool)
         .await
         .map_err(|e| {
@@ -459,6 +470,64 @@ impl QueryLogRepository for SqliteQueryLogRepository {
         let count = row.get::<i64, _>("count") as u64;
         debug!(count = count, "Query count retrieved");
         Ok(count)
+    }
+
+    #[instrument(skip(self))]
+    async fn get_cache_stats(
+        &self,
+        period_hours: f32,
+    ) -> Result<ferrous_dns_application::ports::CacheStats, DomainError> {
+        debug!(period_hours = period_hours, "Fetching cache statistics");
+
+        let row = sqlx::query(
+            "SELECT
+                COUNT(*) as total_queries,
+                SUM(CASE WHEN cache_hit = 1 AND cache_refresh = 0 THEN 1 ELSE 0 END) as hits,
+                SUM(CASE WHEN cache_refresh = 1 THEN 1 ELSE 0 END) as refreshes,
+                SUM(CASE WHEN cache_hit = 0 AND cache_refresh = 0 AND blocked = 0 THEN 1 ELSE 0 END) as misses
+             FROM query_log
+             WHERE created_at >= datetime('now', '-' || ? || ' hours')",
+        )
+        .bind(period_hours)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to fetch cache statistics");
+            DomainError::InvalidDomainName(format!("Database error: {}", e))
+        })?;
+
+        let total_hits = row.get::<i64, _>("hits") as u64;
+        let total_misses = row.get::<i64, _>("misses") as u64;
+        let total_refreshes = row.get::<i64, _>("refreshes") as u64;
+        let total_queries = total_hits + total_misses;
+
+        let hit_rate = if total_queries > 0 {
+            (total_hits as f64 / total_queries as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        let refresh_rate = if total_hits > 0 {
+            (total_refreshes as f64 / total_hits as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        debug!(
+            total_hits = total_hits,
+            total_misses = total_misses,
+            total_refreshes = total_refreshes,
+            hit_rate = hit_rate,
+            "Cache statistics retrieved"
+        );
+
+        Ok(ferrous_dns_application::ports::CacheStats {
+            total_hits,
+            total_misses,
+            total_refreshes,
+            hit_rate,
+            refresh_rate,
+        })
     }
 }
 

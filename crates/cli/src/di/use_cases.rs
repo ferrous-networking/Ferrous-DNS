@@ -61,7 +61,7 @@ impl UseCases {
             get_timeline: Arc::new(GetTimelineUseCase::new(repos.query_log.clone())),
             get_query_rate: Arc::new(GetQueryRateUseCase::new(repos.query_log.clone())),
             get_blocklist: Arc::new(GetBlocklistUseCase::new(repos.blocklist.clone())),
-            get_cache_stats: Arc::new(GetCacheStatsUseCase::new()),
+            get_cache_stats: Arc::new(GetCacheStatsUseCase::new(repos.query_log.clone())),
             get_config: Arc::new(GetConfigUseCase::new(repos.config.clone())),
             update_config: Arc::new(UpdateConfigUseCase::new(repos.config.clone())),
             reload_config: Arc::new(ReloadConfigUseCase::new(config)),

@@ -414,7 +414,7 @@
             },
             async loadStats() {
                 try {
-                    const res = await fetch('/api/stats');
+                    const res = await fetch('/api/stats?period=24h');
                     if (res.ok) this.stats = await res.json()
                 } catch (e) {
                     console.error(e)
@@ -439,7 +439,7 @@
             },
             async loadQueryTypes() {
                 try {
-                    const res = await fetch('/api/queries');
+                    const res = await fetch('/api/queries?period=24h');
                     if (res.ok) {
                         const queries = await res.json();
                         console.log('📊 Total queries received:', queries.length);
@@ -653,13 +653,13 @@
             },
             async loadCacheMetrics() {
                 try {
-                    const res = await fetch('/api/cache/metrics');
+                    const res = await fetch('/api/cache/stats?period=24h');
                     if (res.ok) {
                         const m = await res.json();
                         this.cacheMetrics = {
-                            total_hits: m.hits,
-                            total_misses: m.misses,
-                            total_refreshes: m.optimistic_refreshes,
+                            total_hits: m.total_hits,
+                            total_misses: m.total_misses,
+                            total_refreshes: m.total_refreshes,
                             total_entries: m.total_entries,
                             hit_rate: m.hit_rate
                         }

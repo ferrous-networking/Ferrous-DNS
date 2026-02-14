@@ -2,7 +2,7 @@ use ferrous_dns_application::services::SubnetMatcherService;
 use ferrous_dns_application::use_cases::{
     AssignClientGroupUseCase, CreateClientSubnetUseCase, CreateGroupUseCase,
     CreateManualClientUseCase, DeleteClientSubnetUseCase, DeleteClientUseCase, DeleteGroupUseCase,
-    GetBlocklistUseCase, GetClientSubnetsUseCase, GetClientsUseCase, GetGroupsUseCase,
+    GetBlocklistUseCase, GetCacheStatsUseCase, GetClientSubnetsUseCase, GetClientsUseCase, GetGroupsUseCase,
     GetQueryRateUseCase, GetQueryStatsUseCase, GetRecentQueriesUseCase, GetTimelineUseCase, UpdateGroupUseCase,
 };
 use ferrous_dns_domain::Config;
@@ -16,6 +16,7 @@ pub struct AppState {
     pub get_queries: Arc<GetRecentQueriesUseCase>,
     pub get_timeline: Arc<GetTimelineUseCase>,
     pub get_query_rate: Arc<GetQueryRateUseCase>,
+    pub get_cache_stats: Arc<GetCacheStatsUseCase>,
     pub get_blocklist: Arc<GetBlocklistUseCase>,
     pub get_clients: Arc<GetClientsUseCase>,
     pub get_groups: Arc<GetGroupsUseCase>,
