@@ -888,7 +888,6 @@ impl GroupRepository for MockGroupRepository {
 }
 
 pub struct DnsResolutionBuilder {
-pub struct DnsResolutionBuilder {
     addresses: Vec<IpAddr>,
     cache_hit: bool,
     dnssec_status: Option<&'static str>,
