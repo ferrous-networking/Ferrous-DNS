@@ -381,15 +381,9 @@
 </aside>
 
 <main style="padding:24px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-        <div>
-            <h1 style="font-size:28px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">DNS Filter</h1>
-            <p style="font-size:14px;color:var(--text-secondary)">Manage blocklist sources for DNS filtering</p>
-        </div>
-        <button @click="openAddForm()" class="btn btn-primary" style="display:flex;align-items:center;gap:8px">
-            <i data-lucide="plus" style="width:16px;height:16px"></i>
-            <span>Add Source</span>
-        </button>
+    <div style="margin-bottom:24px">
+        <h1 style="font-size:28px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">DNS Filter</h1>
+        <p style="font-size:14px;color:var(--text-secondary)">Manage blocklist sources for DNS filtering</p>
     </div>
 
     <!-- Tab Bar (extensible for future tabs) -->
@@ -398,10 +392,10 @@
     </div>
 
     <!-- Add / Edit Form -->
-    <div x-show="showForm" x-transition style="margin-bottom:24px">
+    <div style="margin-bottom:24px">
         <div class="card" style="padding:24px">
             <h2 style="font-size:18px;font-weight:700;margin-bottom:16px;color:var(--text-primary)"
-                x-text="editingSource ? 'Edit Blocklist Source' : 'Add Blocklist Source'"></h2>
+                x-text="editingSource ? 'Edit Blocklist Source' : 'Add Blocklist Source'">Add Blocklist Source</h2>
 
             <form @submit.prevent="saveSource()">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -538,7 +532,6 @@
             sources: [],
             groups: [],
             loading: false,
-            showForm: false,
             editingSource: null,
             form: {
                 name: '',
@@ -589,20 +582,6 @@
                 return def ? def.id : (this.groups.length > 0 ? this.groups[0].id : 1);
             },
 
-            openAddForm() {
-                this.editingSource = null;
-                this.form = {
-                    name: '',
-                    url: '',
-                    group_id: this.defaultGroupId(),
-                    comment: '',
-                    enabled: true
-                };
-                this.formError = '';
-                this.showForm = true;
-                this.$nextTick(() => lucide.createIcons());
-            },
-
             editSource(source) {
                 this.editingSource = source;
                 this.form = {
@@ -613,14 +592,19 @@
                     enabled: source.enabled
                 };
                 this.formError = '';
-                this.showForm = true;
                 this.$nextTick(() => lucide.createIcons());
             },
 
             cancelForm() {
-                this.showForm = false;
                 this.editingSource = null;
                 this.formError = '';
+                this.form = {
+                    name: '',
+                    url: '',
+                    group_id: this.defaultGroupId(),
+                    comment: '',
+                    enabled: true
+                };
             },
 
             async saveSource() {
@@ -652,7 +636,7 @@
 
                     if (res.ok) {
                         await this.loadSources();
-                        this.cancelForm();
+                        this.cancelForm(); // reset form to blank "Add" state
                     } else {
                         const errorText = await res.text();
                         this.formError = errorText || 'Failed to save blocklist source';
