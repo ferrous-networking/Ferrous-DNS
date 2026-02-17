@@ -26,8 +26,7 @@ impl CreateBlocklistSourceUseCase {
         comment: Option<String>,
         enabled: bool,
     ) -> Result<BlocklistSource, DomainError> {
-        BlocklistSource::validate_name(&name)
-            .map_err(DomainError::InvalidBlocklistSource)?;
+        BlocklistSource::validate_name(&name).map_err(DomainError::InvalidBlocklistSource)?;
 
         BlocklistSource::validate_url(&url.as_deref().map(Arc::from))
             .map_err(DomainError::InvalidBlocklistSource)?;

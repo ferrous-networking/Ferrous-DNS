@@ -870,7 +870,10 @@ impl GroupRepository for MockGroupRepository {
         let len_before = groups.len();
         groups.retain(|g| g.id != Some(id));
         if groups.len() == len_before {
-            return Err(DomainError::GroupNotFound(format!("Group {} not found", id)));
+            return Err(DomainError::GroupNotFound(format!(
+                "Group {} not found",
+                id
+            )));
         }
         Ok(())
     }

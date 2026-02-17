@@ -53,8 +53,7 @@ fn deserialize_optional_nullable_string<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
-    let val: Option<serde_json::Value> =
-        serde::Deserialize::deserialize(deserializer)?;
+    let val: Option<serde_json::Value> = serde::Deserialize::deserialize(deserializer)?;
 
     match val {
         None => Ok(None),

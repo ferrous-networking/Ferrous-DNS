@@ -3,12 +3,12 @@ use ferrous_dns_application::services::SubnetMatcherService;
 use ferrous_dns_application::use_cases::{
     AssignClientGroupUseCase, CleanupOldClientsUseCase, CreateBlocklistSourceUseCase,
     CreateClientSubnetUseCase, CreateGroupUseCase, CreateManualClientUseCase,
-    DeleteBlocklistSourceUseCase, DeleteClientSubnetUseCase, DeleteClientUseCase, DeleteGroupUseCase,
-    GetBlocklistSourcesUseCase, GetBlocklistUseCase, GetCacheStatsUseCase, GetClientSubnetsUseCase,
-    GetClientsUseCase, GetConfigUseCase, GetGroupsUseCase, GetQueryRateUseCase,
-    GetQueryStatsUseCase, GetRecentQueriesUseCase, GetTimelineUseCase, ReloadConfigUseCase,
-    SyncArpCacheUseCase, SyncHostnamesUseCase, TrackClientUseCase, UpdateBlocklistSourceUseCase,
-    UpdateConfigUseCase, UpdateGroupUseCase,
+    DeleteBlocklistSourceUseCase, DeleteClientSubnetUseCase, DeleteClientUseCase,
+    DeleteGroupUseCase, GetBlocklistSourcesUseCase, GetBlocklistUseCase, GetCacheStatsUseCase,
+    GetClientSubnetsUseCase, GetClientsUseCase, GetConfigUseCase, GetGroupsUseCase,
+    GetQueryRateUseCase, GetQueryStatsUseCase, GetRecentQueriesUseCase, GetTimelineUseCase,
+    ReloadConfigUseCase, SyncArpCacheUseCase, SyncHostnamesUseCase, TrackClientUseCase,
+    UpdateBlocklistSourceUseCase, UpdateConfigUseCase, UpdateGroupUseCase,
 };
 use ferrous_dns_domain::Config;
 use ferrous_dns_infrastructure::dns::PoolManager;

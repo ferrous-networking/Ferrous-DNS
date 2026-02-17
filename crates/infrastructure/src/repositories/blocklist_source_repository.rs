@@ -5,7 +5,16 @@ use sqlx::SqlitePool;
 use std::sync::Arc;
 use tracing::{error, instrument};
 
-type BlocklistSourceRow = (i64, String, Option<String>, i64, Option<String>, i64, String, String);
+type BlocklistSourceRow = (
+    i64,
+    String,
+    Option<String>,
+    i64,
+    Option<String>,
+    i64,
+    String,
+    String,
+);
 
 pub struct SqliteBlocklistSourceRepository {
     pool: SqlitePool,
@@ -71,11 +80,9 @@ impl BlocklistSourceRepository for SqliteBlocklistSourceRepository {
 
         let id = result.last_insert_rowid();
 
-        self.get_by_id(id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::DatabaseError("Failed to fetch created blocklist source".to_string())
-            })
+        self.get_by_id(id).await?.ok_or_else(|| {
+            DomainError::DatabaseError("Failed to fetch created blocklist source".to_string())
+        })
     }
 
     #[instrument(skip(self))]
@@ -123,12 +130,9 @@ impl BlocklistSourceRepository for SqliteBlocklistSourceRepository {
     ) -> Result<BlocklistSource, DomainError> {
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-        let current = self
-            .get_by_id(id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::BlocklistSourceNotFound(format!("Blocklist source {} not found", id))
-            })?;
+        let current = self.get_by_id(id).await?.ok_or_else(|| {
+            DomainError::BlocklistSourceNotFound(format!("Blocklist source {} not found", id))
+        })?;
 
         let final_name = name.unwrap_or_else(|| current.name.to_string());
         let final_url: Option<String> = match url {
@@ -173,11 +177,9 @@ impl BlocklistSourceRepository for SqliteBlocklistSourceRepository {
             )));
         }
 
-        self.get_by_id(id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::DatabaseError("Failed to fetch updated blocklist source".to_string())
-            })
+        self.get_by_id(id).await?.ok_or_else(|| {
+            DomainError::DatabaseError("Failed to fetch updated blocklist source".to_string())
+        })
     }
 
     #[instrument(skip(self))]

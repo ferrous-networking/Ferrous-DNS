@@ -235,9 +235,7 @@ async fn test_update_not_found() {
     let pool = create_test_db().await;
     let repo = SqliteBlocklistSourceRepository::new(pool);
 
-    let result = repo
-        .update(999, None, None, None, None, Some(false))
-        .await;
+    let result = repo.update(999, None, None, None, None, Some(false)).await;
 
     assert!(result.is_err());
     let err_str = format!("{:?}", result.unwrap_err());
@@ -317,5 +315,8 @@ async fn test_fk_group_restricts_delete() {
         .execute(&pool)
         .await;
 
-    assert!(result.is_err(), "FK constraint should prevent group deletion");
+    assert!(
+        result.is_err(),
+        "FK constraint should prevent group deletion"
+    );
 }

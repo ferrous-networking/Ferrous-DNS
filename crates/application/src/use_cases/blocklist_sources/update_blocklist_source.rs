@@ -27,16 +27,12 @@ impl UpdateBlocklistSourceUseCase {
         comment: Option<String>,
         enabled: Option<bool>,
     ) -> Result<BlocklistSource, DomainError> {
-        self.repo
-            .get_by_id(id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::BlocklistSourceNotFound(format!("Blocklist source {} not found", id))
-            })?;
+        self.repo.get_by_id(id).await?.ok_or_else(|| {
+            DomainError::BlocklistSourceNotFound(format!("Blocklist source {} not found", id))
+        })?;
 
         if let Some(ref n) = name {
-            BlocklistSource::validate_name(n)
-                .map_err(DomainError::InvalidBlocklistSource)?;
+            BlocklistSource::validate_name(n).map_err(DomainError::InvalidBlocklistSource)?;
         }
 
         if let Some(ref u_opt) = url {
@@ -53,9 +49,7 @@ impl UpdateBlocklistSourceUseCase {
             self.group_repo
                 .get_by_id(gid)
                 .await?
-                .ok_or_else(|| {
-                    DomainError::GroupNotFound(format!("Group {} not found", gid))
-                })?;
+                .ok_or_else(|| DomainError::GroupNotFound(format!("Group {} not found", gid)))?;
         }
 
         let updated = self

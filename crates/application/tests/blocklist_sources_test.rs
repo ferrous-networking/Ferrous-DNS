@@ -127,9 +127,7 @@ async fn test_create_invalid_name_empty() {
     let group_repo = Arc::new(MockGroupRepository::new());
     let use_case = CreateBlocklistSourceUseCase::new(repo, group_repo);
 
-    let result = use_case
-        .execute("".to_string(), None, 1, None, true)
-        .await;
+    let result = use_case.execute("".to_string(), None, 1, None, true).await;
 
     assert!(result.is_err());
     match result.unwrap_err() {
@@ -225,10 +223,7 @@ async fn test_update_toggle_enabled() {
 async fn test_update_change_group() {
     let repo = Arc::new(MockBlocklistSourceRepository::new());
     let group_repo = Arc::new(MockGroupRepository::new());
-    group_repo
-        .create("Office".to_string(), None)
-        .await
-        .unwrap();
+    group_repo.create("Office".to_string(), None).await.unwrap();
 
     let create_uc = CreateBlocklistSourceUseCase::new(repo.clone(), group_repo.clone());
     let update_uc = UpdateBlocklistSourceUseCase::new(repo, group_repo);
@@ -239,9 +234,7 @@ async fn test_update_change_group() {
         .unwrap();
     let id = source.id.unwrap();
 
-    let result = update_uc
-        .execute(id, None, None, Some(2), None, None)
-        .await;
+    let result = update_uc.execute(id, None, None, Some(2), None, None).await;
 
     assert!(result.is_ok());
     assert_eq!(result.unwrap().group_id, 2);

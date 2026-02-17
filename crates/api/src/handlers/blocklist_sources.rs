@@ -27,7 +27,10 @@ async fn get_all_blocklist_sources(
 ) -> Json<Vec<BlocklistSourceResponse>> {
     match state.get_blocklist_sources.get_all().await {
         Ok(sources) => {
-            debug!(count = sources.len(), "Blocklist sources retrieved successfully");
+            debug!(
+                count = sources.len(),
+                "Blocklist sources retrieved successfully"
+            );
             Json(
                 sources
                     .into_iter()
@@ -91,7 +94,14 @@ async fn update_blocklist_source(
 ) -> Result<Json<BlocklistSourceResponse>, (StatusCode, String)> {
     match state
         .update_blocklist_source
-        .execute(id, req.name, req.url, req.group_id, req.comment, req.enabled)
+        .execute(
+            id,
+            req.name,
+            req.url,
+            req.group_id,
+            req.comment,
+            req.enabled,
+        )
         .await
     {
         Ok(source) => Ok(Json(BlocklistSourceResponse::from_source(source))),
