@@ -26,7 +26,7 @@ if [ -n "$FERROUS_BIND_ADDRESS" ] && [ "$FERROUS_BIND_ADDRESS" != "0.0.0.0" ]; t
     ARGS="$ARGS --bind $FERROUS_BIND_ADDRESS"
 fi
 
-if [ -n "$FERROUS_DATABASE" ] && [ "$FERROUS_DATABASE" != "/var/lib/ferrous-dns/ferrous.db" ]; then
+if [ -n "$FERROUS_DATABASE" ] && [ "$FERROUS_DATABASE" != "/data/db/ferrous.db" ]; then
     ARGS="$ARGS --database $FERROUS_DATABASE"
 fi
 

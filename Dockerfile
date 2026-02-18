@@ -14,15 +14,24 @@ RUN apk add --no-cache \
 # Create app directory
 WORKDIR /app
 
-# Copy workspace manifests
+# Copy only workspace and crate manifests (cache invalidated only by dep changes)
 COPY Cargo.toml Cargo.lock ./
-COPY crates/ ./crates/
+COPY crates/cli/Cargo.toml ./crates/cli/
+COPY crates/domain/Cargo.toml ./crates/domain/
+COPY crates/application/Cargo.toml ./crates/application/
+COPY crates/infrastructure/Cargo.toml ./crates/infrastructure/
+COPY crates/jobs/Cargo.toml ./crates/jobs/
+COPY crates/api/Cargo.toml ./crates/api/
 
-# Build dependencies first (cached layer)
-RUN mkdir -p crates/cli/src && \
-    echo "fn main() {}" > crates/cli/src/main.rs && \
+# Create stub sources for all crates to compile dependencies only
+RUN mkdir -p crates/cli/src crates/domain/src crates/application/src \
+             crates/infrastructure/src crates/jobs/src crates/api/src && \
+    echo 'fn main() {}' > crates/cli/src/main.rs && \
+    touch crates/domain/src/lib.rs crates/application/src/lib.rs \
+          crates/infrastructure/src/lib.rs crates/jobs/src/lib.rs \
+          crates/api/src/lib.rs && \
     cargo build --release && \
-    rm -rf crates/cli/src
+    rm -rf crates/*/src
 
 # Copy actual source code
 COPY crates/ ./crates/
@@ -82,4 +91,3 @@ VOLUME ["/data"]
 
 # Entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["serve"]
