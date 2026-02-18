@@ -3,9 +3,6 @@ use ferrous_dns_domain::{DnsQuery, DomainError};
 use std::net::IpAddr;
 use std::sync::Arc;
 
-/// Result of a DNS resolution with metadata.
-/// Uses `&'static str` for dnssec_status (only 5 possible values).
-/// Uses `Arc<Vec<IpAddr>>` for addresses to avoid Vec clone on cache hit.
 #[derive(Debug, Clone)]
 pub struct DnsResolution {
     pub addresses: Arc<Vec<IpAddr>>,

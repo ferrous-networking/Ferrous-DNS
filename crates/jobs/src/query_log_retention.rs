@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info};
 
-/// Background job that periodically cleans up old query logs (data retention)
 pub struct QueryLogRetentionJob {
     cleanup: Arc<CleanupOldQueryLogsUseCase>,
     retention_days: u32,

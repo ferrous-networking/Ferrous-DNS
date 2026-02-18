@@ -3,8 +3,6 @@ use ferrous_dns_domain::DomainError;
 use std::sync::Arc;
 use tracing::info;
 
-/// Use case: Clean up old query logs (data retention)
-/// Should be run daily
 pub struct CleanupOldQueryLogsUseCase {
     query_log_repo: Arc<dyn QueryLogRepository>,
 }

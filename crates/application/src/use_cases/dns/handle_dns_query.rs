@@ -33,7 +33,6 @@ impl HandleDnsQueryUseCase {
     pub async fn execute(&self, request: &DnsRequest) -> Result<Vec<IpAddr>, DomainError> {
         let start = Instant::now();
 
-        // Track client (fire-and-forget via spawn — hits DB, must not block DNS response)
         if let Some(client_repo) = &self.client_repo {
             let client_repo = Arc::clone(client_repo);
             let client_ip = request.client_ip;
@@ -63,7 +62,6 @@ impl HandleDnsQueryUseCase {
                 query_source: QuerySource::Client,
             };
 
-            // log_query uses try_send internally — non-blocking, no spawn needed
             if let Err(e) = self.query_log.log_query(&query_log).await {
                 tracing::warn!(error = %e, domain = %query_log.domain, "Failed to log blocked query");
             }
@@ -93,12 +91,10 @@ impl HandleDnsQueryUseCase {
                     query_source: QuerySource::Client,
                 };
 
-                // log_query uses try_send internally — non-blocking, no spawn needed
                 if let Err(e) = self.query_log.log_query(&query_log).await {
                     tracing::warn!(error = %e, domain = %query_log.domain, "Failed to log query");
                 }
 
-                // Unwrap Arc if sole owner (cache miss); otherwise clone once at boundary
                 Ok(Arc::try_unwrap(resolution.addresses)
                     .unwrap_or_else(|arc| (*arc).clone()))
             }
@@ -126,7 +122,6 @@ impl HandleDnsQueryUseCase {
                     query_source: QuerySource::Client,
                 };
 
-                // log_query uses try_send internally — non-blocking, no spawn needed
                 if let Err(log_err) = self.query_log.log_query(&query_log).await {
                     tracing::warn!(error = %log_err, "Failed to log error query");
                 }

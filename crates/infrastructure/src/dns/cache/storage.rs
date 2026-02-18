@@ -10,7 +10,6 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering as AtomicOrdering};
 use std::sync::Arc;
 use tracing::{debug, info};
 
-/// Main DNS cache with eviction, refresh, and DNSSEC support
 pub struct DnsCache {
     pub(super) cache: Arc<DashMap<CacheKey, CachedRecord, FxBuildHasher>>,
     pub(super) max_entries: usize,
@@ -28,7 +27,7 @@ pub struct DnsCache {
 }
 
 impl DnsCache {
-    /// Create a new DNS cache
+    
     pub fn new(
         max_entries: usize,
         eviction_strategy: EvictionStrategy,
@@ -67,29 +66,24 @@ impl DnsCache {
         }
     }
 
-    /// Get threshold for eviction (internal)
     pub(super) fn get_threshold(&self) -> f64 {
         let bits = self.min_threshold_bits.load(AtomicOrdering::Relaxed);
         f64::from_bits(bits)
     }
 
-    /// Set threshold for eviction (internal)
     fn set_threshold(&self, value: f64) {
         self.min_threshold_bits
             .store(value.to_bits(), AtomicOrdering::Relaxed);
     }
 
-    /// Get number of entries in cache
     pub fn len(&self) -> usize {
         self.cache.len()
     }
 
-    /// Check if cache is empty
     pub fn is_empty(&self) -> bool {
         self.cache.is_empty()
     }
 
-    /// Get a cached record
     pub fn get(
         &self,
         domain: &str,
@@ -111,9 +105,9 @@ impl DnsCache {
             let record = entry.value();
 
             if record.is_stale_usable() {
-                // Mark as refreshing (empty block is intentional - we just want the swap)
+                
                 if !record.refreshing.swap(true, AtomicOrdering::Acquire) {
-                    // Do nothing - just marking for refresh
+                    
                 }
                 self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
                 record.record_hit();
@@ -140,7 +134,6 @@ impl DnsCache {
         None
     }
 
-    /// Insert a new record into cache
     pub fn insert(
         &self,
         domain: &str,
@@ -172,7 +165,6 @@ impl DnsCache {
         );
     }
 
-    /// Insert a permanent record (never expires)
     pub fn insert_permanent(
         &self,
         domain: &str,
@@ -200,7 +192,6 @@ impl DnsCache {
         }
     }
 
-    /// Remove a record from cache
     pub fn remove(&self, domain: &str, record_type: &RecordType) -> bool {
         let key = CacheKey::new(domain, *record_type);
 
@@ -213,7 +204,6 @@ impl DnsCache {
         }
     }
 
-    /// Clear the entire cache
     pub fn clear(&self) {
         self.cache.clear();
         self.bloom.clear();
@@ -333,7 +323,7 @@ impl DnsCache {
             EvictionStrategy::LFU => record.hit_count.load(AtomicOrdering::Relaxed) as f64,
             EvictionStrategy::HitRate => {
                 let hits = record.hit_count.load(AtomicOrdering::Relaxed);
-                let total = hits + 1; // Evitar divisão por zero
+                let total = hits + 1; 
                 if total == 0 {
                     0.0
                 } else {

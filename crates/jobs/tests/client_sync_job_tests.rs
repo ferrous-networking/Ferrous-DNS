@@ -6,13 +6,9 @@ use tokio::time::{Duration, sleep};
 mod helpers;
 use helpers::{make_client, MockArpReader, MockClientRepository, MockHostnameResolver};
 
-// ============================================================================
-// Tests: SyncArpCacheUseCase (business logic exercised by ClientSyncJob)
-// ============================================================================
-
 #[tokio::test]
 async fn test_arp_sync_updates_known_clients() {
-    // Arrange - client exists, ARP table has its MAC
+    
     let repo = Arc::new(
         MockClientRepository::with_clients(vec![make_client(1, "192.168.1.10")]).await,
     );
@@ -21,10 +17,8 @@ async fn test_arp_sync_updates_known_clients() {
     ]));
     let use_case = SyncArpCacheUseCase::new(arp.clone(), repo.clone());
 
-    // Act
     let result = use_case.execute().await;
 
-    // Assert
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 1);
 
@@ -37,39 +31,35 @@ async fn test_arp_sync_updates_known_clients() {
 
 #[tokio::test]
 async fn test_arp_sync_empty_table_returns_zero() {
-    // Arrange - no ARP entries
+    
     let repo = Arc::new(MockClientRepository::new());
     let arp = Arc::new(MockArpReader::new());
     let use_case = SyncArpCacheUseCase::new(arp, repo);
 
-    // Act
     let result = use_case.execute().await;
 
-    // Assert
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 0);
 }
 
 #[tokio::test]
 async fn test_arp_sync_unknown_ip_skipped() {
-    // Arrange - ARP table has IP not in repo
+    
     let repo = Arc::new(MockClientRepository::new());
     let arp = Arc::new(MockArpReader::with_entries(vec![
         ("10.0.0.99", "ff:ee:dd:cc:bb:aa"),
     ]));
     let use_case = SyncArpCacheUseCase::new(arp, repo.clone());
 
-    // Act
     let result = use_case.execute().await;
 
-    // Assert
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), 0); // No clients updated (IP not tracked)
+    assert_eq!(result.unwrap(), 0); 
 }
 
 #[tokio::test]
 async fn test_arp_sync_multiple_entries() {
-    // Arrange
+    
     let repo = Arc::new(
         MockClientRepository::with_clients(vec![
             make_client(1, "192.168.1.1"),
@@ -85,10 +75,8 @@ async fn test_arp_sync_multiple_entries() {
     ]));
     let use_case = SyncArpCacheUseCase::new(arp, repo.clone());
 
-    // Act
     let result = use_case.execute().await;
 
-    // Assert
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 3);
     assert_eq!(repo.mac_update_count(), 3);
@@ -96,7 +84,7 @@ async fn test_arp_sync_multiple_entries() {
 
 #[tokio::test]
 async fn test_arp_sync_partial_match() {
-    // Arrange - 3 clients, only 2 in ARP table
+    
     let repo = Arc::new(
         MockClientRepository::with_clients(vec![
             make_client(1, "192.168.1.1"),
@@ -111,25 +99,18 @@ async fn test_arp_sync_partial_match() {
     ]));
     let use_case = SyncArpCacheUseCase::new(arp, repo.clone());
 
-    // Act
     let result = use_case.execute().await;
 
-    // Assert - only 2 updated
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 2);
 
-    // Client 3 remains without MAC
     let client3 = repo.get_client_by_ip("192.168.1.3").await.unwrap();
     assert!(client3.mac_address.is_none());
 }
 
-// ============================================================================
-// Tests: SyncHostnamesUseCase (business logic exercised by ClientSyncJob)
-// ============================================================================
-
 #[tokio::test]
 async fn test_hostname_sync_resolves_known_clients() {
-    // Arrange
+    
     let client = make_client(1, "192.168.1.50");
     let repo = Arc::new(MockClientRepository::with_clients(vec![client]).await);
     let resolver = Arc::new(MockHostnameResolver::new());
@@ -139,10 +120,8 @@ async fn test_hostname_sync_resolves_known_clients() {
 
     let use_case = SyncHostnamesUseCase::new(repo.clone(), resolver);
 
-    // Act
     let result = use_case.execute(10).await;
 
-    // Assert
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 1);
 
@@ -152,7 +131,7 @@ async fn test_hostname_sync_resolves_known_clients() {
 
 #[tokio::test]
 async fn test_hostname_sync_no_ptr_record_skips_client() {
-    // Arrange - resolver returns None (no PTR)
+    
     let client = make_client(1, "192.168.1.60");
     let repo = Arc::new(MockClientRepository::with_clients(vec![client]).await);
     let resolver = Arc::new(MockHostnameResolver::new());
@@ -160,10 +139,8 @@ async fn test_hostname_sync_no_ptr_record_skips_client() {
 
     let use_case = SyncHostnamesUseCase::new(repo.clone(), resolver);
 
-    // Act
     let result = use_case.execute(10).await;
 
-    // Assert - no hostnames resolved (PTR returned None)
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 0);
 
@@ -173,29 +150,27 @@ async fn test_hostname_sync_no_ptr_record_skips_client() {
 
 #[tokio::test]
 async fn test_hostname_sync_empty_repository() {
-    // Arrange - no clients
+    
     let repo = Arc::new(MockClientRepository::new());
     let resolver = Arc::new(MockHostnameResolver::new());
     let use_case = SyncHostnamesUseCase::new(repo, resolver.clone());
 
-    // Act
     let result = use_case.execute(10).await;
 
-    // Assert
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 0);
-    assert_eq!(resolver.call_count(), 0); // Resolver never called
+    assert_eq!(resolver.call_count(), 0); 
 }
 
 #[tokio::test]
 async fn test_hostname_sync_respects_batch_size() {
-    // Arrange - 5 clients without hostname, batch_size = 3
+    
     let clients = (1..=5)
         .map(|i| make_client(i, &format!("192.168.1.{}", i + 10)))
         .collect();
     let repo = Arc::new(MockClientRepository::with_clients(clients).await);
     let resolver = Arc::new(MockHostnameResolver::new());
-    // All IPs resolve to a hostname
+    
     for i in 1..=5 {
         resolver
             .set_response(
@@ -207,10 +182,8 @@ async fn test_hostname_sync_respects_batch_size() {
 
     let use_case = SyncHostnamesUseCase::new(repo.clone(), resolver.clone());
 
-    // Act - process only 3
     let result = use_case.execute(3).await;
 
-    // Assert - at most 3 resolved
     assert!(result.is_ok());
     assert!(result.unwrap() <= 3);
     assert!(resolver.call_count() <= 3);
@@ -218,7 +191,7 @@ async fn test_hostname_sync_respects_batch_size() {
 
 #[tokio::test]
 async fn test_hostname_sync_resolver_error_is_non_fatal() {
-    // Arrange - resolver fails for all
+    
     let clients = vec![make_client(1, "192.168.1.100")];
     let repo = Arc::new(MockClientRepository::with_clients(clients).await);
     let resolver = Arc::new(MockHostnameResolver::new());
@@ -226,21 +199,15 @@ async fn test_hostname_sync_resolver_error_is_non_fatal() {
 
     let use_case = SyncHostnamesUseCase::new(repo, resolver);
 
-    // Act - errors are logged but use case succeeds
     let result = use_case.execute(10).await;
 
-    // Assert - use case doesn't propagate resolver errors
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 0);
 }
 
-// ============================================================================
-// Tests: ClientSyncJob construction and scheduling
-// ============================================================================
-
 #[tokio::test]
 async fn test_client_sync_job_starts_without_panic() {
-    // Arrange
+    
     let repo = Arc::new(MockClientRepository::new());
     let arp = Arc::new(MockArpReader::new());
     let resolver = Arc::new(MockHostnameResolver::new());
@@ -250,16 +217,14 @@ async fn test_client_sync_job_starts_without_panic() {
 
     let job = Arc::new(ClientSyncJob::new(sync_arp, sync_hostnames));
 
-    // Act - start should not panic
     job.start().await;
 
-    // Give tasks a moment to initialize
     sleep(Duration::from_millis(10)).await;
 }
 
 #[tokio::test]
 async fn test_client_sync_job_with_custom_intervals() {
-    // Arrange - very short intervals so job fires quickly
+    
     let repo = Arc::new(
         MockClientRepository::with_clients(vec![make_client(1, "10.0.0.1")]).await,
     );
@@ -273,15 +238,12 @@ async fn test_client_sync_job_with_custom_intervals() {
     let sync_hostnames = Arc::new(SyncHostnamesUseCase::new(repo.clone(), resolver.clone()));
 
     let job = Arc::new(
-        ClientSyncJob::new(sync_arp, sync_hostnames).with_intervals(1, 1), // 1 second intervals
+        ClientSyncJob::new(sync_arp, sync_hostnames).with_intervals(1, 1), 
     );
 
-    // Act
     job.start().await;
 
-    // Wait for at least one tick
     sleep(Duration::from_millis(1100)).await;
 
-    // Assert - ARP reader was called at least once
     assert!(arp.call_count() >= 1, "ARP sync should have run at least once");
 }

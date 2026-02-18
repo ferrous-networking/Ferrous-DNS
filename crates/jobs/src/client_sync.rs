@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info};
 
-/// Background job that periodically syncs ARP cache and hostnames
 pub struct ClientSyncJob {
     sync_arp: Arc<SyncArpCacheUseCase>,
     sync_hostnames: Arc<SyncHostnamesUseCase>,

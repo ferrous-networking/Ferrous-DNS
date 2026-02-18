@@ -2,20 +2,6 @@ use crate::{ClientSyncJob, QueryLogRetentionJob, RetentionJob};
 use std::sync::Arc;
 use tracing::info;
 
-/// Central orchestrator for all background jobs.
-///
-/// Use the builder pattern to register jobs, then call `.start()` once.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// JobRunner::new()
-///     .with_client_sync(ClientSyncJob::new(sync_arp, sync_hostnames))
-///     .with_retention(RetentionJob::new(cleanup_clients, 30))
-///     .with_query_log_retention(QueryLogRetentionJob::new(cleanup_logs, 30))
-///     .start()
-///     .await;
-/// ```
 pub struct JobRunner {
     client_sync: Option<ClientSyncJob>,
     retention: Option<RetentionJob>,
@@ -46,7 +32,6 @@ impl JobRunner {
         self
     }
 
-    /// Start all registered background jobs.
     pub async fn start(self) {
         info!("Starting background job runner");
 

@@ -1,17 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-/// Database configuration for query logging
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct DatabaseConfig {
-    /// Path to SQLite database file (default: "./ferrous-dns.db")
+    
     #[serde(default = "default_db_path")]
     pub path: String,
 
-    /// Enable query logging to database (default: true)
     #[serde(default = "default_true")]
     pub log_queries: bool,
 
-    /// Number of days to keep query logs (default: 30)
     #[serde(default = "default_queries_log_stored")]
     pub queries_log_stored: u32,
 }

@@ -75,7 +75,7 @@ impl DnsResolver for CoreResolver {
                             server = %server,
                             "Conditional forwarding failed, falling back to upstream"
                         );
-                        // Continue to normal upstream resolution
+                        
                     }
                 }
             }

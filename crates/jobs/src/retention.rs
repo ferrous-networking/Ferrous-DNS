@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info};
 
-/// Background job that periodically cleans up old clients (data retention)
 pub struct RetentionJob {
     cleanup: Arc<CleanupOldClientsUseCase>,
     retention_days: u32,

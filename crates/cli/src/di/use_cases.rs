@@ -59,7 +59,6 @@ impl UseCases {
         let arp_reader = Arc::new(LinuxArpReader::new());
         let hostname_resolver = Arc::new(PtrHostnameResolver::new(pool_manager, 5));
 
-        // Initialize SubnetMatcherService
         let subnet_matcher = Arc::new(SubnetMatcherService::new(repos.client_subnet.clone()));
 
         Self {

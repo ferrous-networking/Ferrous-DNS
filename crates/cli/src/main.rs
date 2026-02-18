@@ -17,27 +17,22 @@ mod server;
 #[command(version = "0.1.0")]
 #[command(about = "Ferrous DNS - High-performance DNS server with ad-blocking")]
 struct Cli {
-    /// Configuration file path
+    
     #[arg(short = 'c', long, value_name = "FILE")]
     config: Option<String>,
 
-    /// DNS server port
     #[arg(short = 'd', long)]
     dns_port: Option<u16>,
 
-    /// Web server port
     #[arg(short = 'w', long)]
     web_port: Option<u16>,
 
-    /// Bind address
     #[arg(short = 'b', long)]
     bind: Option<String>,
 
-    /// Database path
     #[arg(long)]
     database: Option<String>,
 
-    /// Log level (trace, debug, info, warn, error)
     #[arg(long)]
     log_level: Option<String>,
 }
@@ -46,7 +41,6 @@ struct Cli {
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    // Load configuration
     let cli_overrides = CliOverrides {
         dns_port: cli.dns_port,
         web_port: cli.web_port,
@@ -57,19 +51,15 @@ async fn main() -> anyhow::Result<()> {
 
     let config = bootstrap::load_config(cli.config.as_deref(), cli_overrides)?;
 
-    // Initialize logging
     bootstrap::init_logging(&config);
 
     info!("Starting Ferrous DNS Server v{}", env!("CARGO_PKG_VERSION"));
 
-    // Initialize database
     let database_url = format!("sqlite:{}", config.database.path);
     let pool = bootstrap::init_database(&database_url).await?;
 
-    // Wrap config in Arc<RwLock> for sharing
     let config_arc = Arc::new(RwLock::new(config.clone()));
 
-    // Dependency Injection - Build all dependencies
     let repos = di::Repositories::new(pool).await?;
     let dns_services = di::DnsServices::new(&config, &repos).await?;
     let use_cases = di::UseCases::new(
@@ -78,7 +68,6 @@ async fn main() -> anyhow::Result<()> {
         dns_services.pool_manager.clone(),
     );
 
-    // Start background jobs
     JobRunner::new()
         .with_client_sync(ClientSyncJob::new(
             use_cases.sync_arp.clone(),
@@ -86,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
         ))
         .with_retention(RetentionJob::new(
             use_cases.cleanup_clients.clone(),
-            30, // 30 days retention
+            30, 
         ))
         .with_query_log_retention(QueryLogRetentionJob::new(
             use_cases.cleanup_query_logs.clone(),
@@ -95,14 +84,12 @@ async fn main() -> anyhow::Result<()> {
         .start()
         .await;
 
-    // Initialize subnet matcher cache
     info!("Loading subnet matcher cache");
     if let Err(e) = use_cases.subnet_matcher.refresh().await {
         error!(error = %e, "Failed to load subnet matcher cache");
     }
     info!("Subnet matcher cache loaded");
 
-    // Create AppState for web server
     let app_state = AppState {
         get_stats: use_cases.get_stats,
         get_queries: use_cases.get_queries,
@@ -131,7 +118,6 @@ async fn main() -> anyhow::Result<()> {
         dns_resolver: dns_services.resolver.clone(),
     };
 
-    // Start DNS server in background
     let dns_addr = format!("{}:{}", config.server.bind_address, config.server.dns_port);
     let dns_handler = DnsServerHandler::new(dns_services.handler_use_case);
 
@@ -141,7 +127,6 @@ async fn main() -> anyhow::Result<()> {
         }
     });
 
-    // Start web server (blocking)
     let web_addr: SocketAddr = format!("{}:{}", config.server.bind_address, config.server.web_port)
         .parse()
         .expect("Invalid address");

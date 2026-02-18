@@ -14,10 +14,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::RwLock;
 
-// ============================================================================
-// Mock ArpReader
-// ============================================================================
-
 pub struct MockArpReader {
     table: Arc<RwLock<ArpTable>>,
     call_count: Arc<AtomicU64>,
@@ -72,10 +68,6 @@ impl ArpReader for MockArpReader {
     }
 }
 
-// ============================================================================
-// Mock HostnameResolver
-// ============================================================================
-
 pub struct MockHostnameResolver {
     responses: Arc<RwLock<HashMap<IpAddr, Option<String>>>>,
     call_count: Arc<AtomicU64>,
@@ -125,10 +117,6 @@ impl HostnameResolver for MockHostnameResolver {
             .unwrap_or(None))
     }
 }
-
-// ============================================================================
-// Mock ClientRepository
-// ============================================================================
 
 pub struct MockClientRepository {
     clients: Arc<RwLock<HashMap<i64, Client>>>,
@@ -405,12 +393,8 @@ impl ClientRepository for MockClientRepository {
     }
 }
 
-// ============================================================================
-// Mock QueryLogRepository
-// ============================================================================
-
 pub struct MockQueryLogRepository {
-    logs: Arc<RwLock<Vec<(QueryLog, String)>>>, // (log, created_at rfc3339)
+    logs: Arc<RwLock<Vec<(QueryLog, String)>>>, 
     delete_count: Arc<AtomicU64>,
 }
 
@@ -430,7 +414,6 @@ impl MockQueryLogRepository {
         self.delete_count.load(Ordering::Relaxed)
     }
 
-    /// Add a log entry with a specific creation timestamp (rfc3339)
     pub async fn add_log_at(&self, ip: &str, timestamp: &str) {
         let log = QueryLog {
             id: None,
@@ -453,13 +436,11 @@ impl MockQueryLogRepository {
             .push((log, timestamp.to_string()));
     }
 
-    /// Add a recent log (now)
     pub async fn add_recent_log(&self, ip: &str) {
         let ts = chrono::Utc::now().to_rfc3339();
         self.add_log_at(ip, &ts).await;
     }
 
-    /// Add an old log (days_old days ago)
     pub async fn add_old_log(&self, ip: &str, days_old: i64) {
         let ts = (chrono::Utc::now() - chrono::Duration::days(days_old)).to_rfc3339();
         self.add_log_at(ip, &ts).await;

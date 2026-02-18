@@ -62,7 +62,6 @@ impl RequestHandler for DnsServerHandler {
             }
         };
 
-        // Domain enters Arc<str> here — all downstream clones are atomic increments
         let dns_request = ferrous_dns_domain::DnsRequest::new(&*domain, our_record_type, client_ip);
         let domain_ref = &dns_request.domain;
 
@@ -103,7 +102,6 @@ impl RequestHandler for DnsServerHandler {
             };
         }
 
-        // Pre-compute Name once instead of parsing inside the loop
         let record_name = Name::from_str(domain_ref).unwrap_or_else(|_| Name::root());
 
         let builder = MessageResponseBuilder::from_message_request(request);

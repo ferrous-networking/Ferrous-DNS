@@ -15,15 +15,6 @@ impl ParallelStrategy {
         Self
     }
 
-    /// Query all servers in parallel, return fastest response with immediate cancellation.
-    ///
-    /// **PHASE 2 OPTIMIZATION**: Immediately cancels remaining queries when first succeeds.
-    /// This reduces unnecessary network traffic and server load (5-15% latency improvement).
-    ///
-    /// ## Phase 5: Query Event Logging
-    ///
-    /// The `emitter` parameter is cloned and passed to each spawned task to enable
-    /// comprehensive logging of all parallel DNS queries.
     pub async fn query_refs(
         &self,
         servers: &[&DnsProtocol],
@@ -71,7 +62,7 @@ impl ParallelStrategy {
             while let Some(join_result) = futs.next().await {
                 match join_result {
                     Ok(Ok(r)) => {
-                        // SUCCESS! Cancel all remaining queries immediately
+                        
                         let canceled = abort_handles.len().saturating_sub(1);
 
                         for handle in &abort_handles {
