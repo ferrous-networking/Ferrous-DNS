@@ -114,14 +114,14 @@ fn row_to_query_log(row: SqliteRow) -> Option<QueryLog> {
         .unwrap_or_else(|| "client".to_string());
     let query_source = QuerySource::from_str(&query_source_str).unwrap_or(QuerySource::Client);
 
-    let block_source: Option<BlockSource> = row
-        .get::<Option<String>, _>("block_source")
-        .and_then(|s| match s.as_str() {
-            "blocklist" => Some(BlockSource::Blocklist),
-            "managed_domain" => Some(BlockSource::ManagedDomain),
-            "regex_filter" => Some(BlockSource::RegexFilter),
-            _ => None,
-        });
+    let block_source: Option<BlockSource> =
+        row.get::<Option<String>, _>("block_source")
+            .and_then(|s| match s.as_str() {
+                "blocklist" => Some(BlockSource::Blocklist),
+                "managed_domain" => Some(BlockSource::ManagedDomain),
+                "regex_filter" => Some(BlockSource::RegexFilter),
+                _ => None,
+            });
 
     Some(QueryLog {
         id: Some(row.get("id")),

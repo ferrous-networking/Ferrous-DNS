@@ -128,7 +128,11 @@ async fn create_test_db() -> sqlx::SqlitePool {
 async fn create_test_app() -> (Router, Arc<SqliteClientRepository>, sqlx::SqlitePool) {
     let pool = create_test_db().await;
     let client_repo = Arc::new(SqliteClientRepository::new(pool.clone()));
-    let group_repo = Arc::new(ferrous_dns_infrastructure::repositories::group_repository::SqliteGroupRepository::new(pool.clone()));
+    let group_repo = Arc::new(
+        ferrous_dns_infrastructure::repositories::group_repository::SqliteGroupRepository::new(
+            pool.clone(),
+        ),
+    );
     let regex_filter_repo = Arc::new(SqliteRegexFilterRepository::new(pool.clone()));
 
     let config = Arc::new(RwLock::new(Config::default()));

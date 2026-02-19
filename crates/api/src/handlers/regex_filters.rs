@@ -22,12 +22,13 @@ pub fn routes() -> Router<AppState> {
         .route("/regex-filters/{id}", delete(delete_regex_filter))
 }
 
-async fn get_all_regex_filters(
-    State(state): State<AppState>,
-) -> Json<Vec<RegexFilterResponse>> {
+async fn get_all_regex_filters(State(state): State<AppState>) -> Json<Vec<RegexFilterResponse>> {
     match state.get_regex_filters.get_all().await {
         Ok(filters) => {
-            debug!(count = filters.len(), "Regex filters retrieved successfully");
+            debug!(
+                count = filters.len(),
+                "Regex filters retrieved successfully"
+            );
             Json(
                 filters
                     .into_iter()
@@ -75,7 +76,14 @@ async fn create_regex_filter(
 
     match state
         .create_regex_filter
-        .execute(req.name, req.pattern, action, group_id, req.comment, enabled)
+        .execute(
+            req.name,
+            req.pattern,
+            action,
+            group_id,
+            req.comment,
+            enabled,
+        )
         .await
     {
         Ok(filter) => Ok((

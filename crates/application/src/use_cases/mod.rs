@@ -37,13 +37,13 @@ pub use managed_domains::{
     CreateManagedDomainUseCase, DeleteManagedDomainUseCase, GetManagedDomainsUseCase,
     UpdateManagedDomainUseCase,
 };
-pub use regex_filters::{
-    CreateRegexFilterUseCase, DeleteRegexFilterUseCase, GetRegexFiltersUseCase,
-    UpdateRegexFilterUseCase,
-};
 pub use queries::{
     CleanupOldQueryLogsUseCase, GetQueryRateUseCase, GetQueryStatsUseCase, GetRecentQueriesUseCase,
     GetTimelineUseCase, Granularity, QueryRate, RateUnit,
+};
+pub use regex_filters::{
+    CreateRegexFilterUseCase, DeleteRegexFilterUseCase, GetRegexFiltersUseCase,
+    UpdateRegexFilterUseCase,
 };
 pub use whitelist::GetWhitelistUseCase;
 pub use whitelist_sources::{

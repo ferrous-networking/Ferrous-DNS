@@ -66,8 +66,10 @@ pub fn decision_l0_get(domain: &str, group_id: i64) -> Option<Option<BlockSource
 #[inline]
 pub fn decision_l0_set(domain: &str, group_id: i64, source: Option<BlockSource>) {
     BLOCK_L0.with(|c| {
-        c.borrow_mut()
-            .put(decision_key(domain, group_id), (encode_source(source), coarse_now_secs()));
+        c.borrow_mut().put(
+            decision_key(domain, group_id),
+            (encode_source(source), coarse_now_secs()),
+        );
     });
 }
 
@@ -111,10 +113,10 @@ impl BlockDecisionCache {
 
     #[inline]
     pub fn set(&self, domain: &str, group_id: i64, source: Option<BlockSource>) {
-        self.inner
-            .lock()
-            .unwrap()
-            .put(decision_key(domain, group_id), (encode_source(source), coarse_now_secs()));
+        self.inner.lock().unwrap().put(
+            decision_key(domain, group_id),
+            (encode_source(source), coarse_now_secs()),
+        );
     }
 
     pub fn clear(&self) {

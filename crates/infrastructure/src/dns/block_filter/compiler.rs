@@ -4,9 +4,9 @@ use crate::dns::cache::bloom::AtomicBloom;
 use aho_corasick::AhoCorasick;
 use compact_str::CompactString;
 use dashmap::{DashMap, DashSet};
+use fancy_regex::Regex;
 use ferrous_dns_domain::DomainError;
 use futures::future::join_all;
-use fancy_regex::Regex;
 use rustc_hash::FxBuildHasher;
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
@@ -368,12 +368,10 @@ struct RegexFilterMaps {
 }
 
 async fn load_regex_filters_for_index(pool: &SqlitePool) -> Result<RegexFilterMaps, DomainError> {
-    let rows = sqlx::query(
-        "SELECT pattern, action, group_id FROM regex_filters WHERE enabled = 1",
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+    let rows = sqlx::query("SELECT pattern, action, group_id FROM regex_filters WHERE enabled = 1")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
 
     let mut block_patterns: HashMap<i64, Vec<Regex>> = HashMap::new();
     let mut allow_patterns: HashMap<i64, Vec<Regex>> = HashMap::new();
@@ -383,8 +381,7 @@ async fn load_regex_filters_for_index(pool: &SqlitePool) -> Result<RegexFilterMa
         let action: String = row.get("action");
         let group_id: i64 = row.get("group_id");
 
-        match Regex::new(&format!("(?i){}", &pattern))
-        {
+        match Regex::new(&format!("(?i){}", &pattern)) {
             Ok(re) => {
                 if action == "deny" {
                     block_patterns.entry(group_id).or_default().push(re);
@@ -447,7 +444,7 @@ pub async fn compile_block_index(
             if entry.domain.starts_with("*.") {
                 managed_deny_wildcards
                     .entry(entry.group_id)
-                    .or_insert_with(SuffixTrie::new)
+                    .or_default()
                     .insert_wildcard(&entry.domain, 1u64);
             } else {
                 managed_denies
@@ -552,7 +549,7 @@ async fn build_allowlist_index(
                 allowlists
                     .group_wildcard
                     .entry(entry.group_id)
-                    .or_insert_with(SuffixTrie::new)
+                    .or_default()
                     .insert_wildcard(&entry.domain, 1u64);
             } else {
                 allowlists

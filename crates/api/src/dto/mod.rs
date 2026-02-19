@@ -10,8 +10,8 @@ pub mod hostname;
 pub mod local_record;
 pub mod managed_domain;
 pub mod query;
-pub mod regex_filter;
 pub mod rate;
+pub mod regex_filter;
 pub mod stats;
 pub mod timeline;
 pub mod whitelist;
@@ -21,9 +21,7 @@ pub use local_record::{CreateLocalRecordRequest, LocalRecordDto};
 pub use managed_domain::{
     CreateManagedDomainRequest, ManagedDomainResponse, UpdateManagedDomainRequest,
 };
-pub use regex_filter::{
-    CreateRegexFilterRequest, RegexFilterResponse, UpdateRegexFilterRequest,
-};
+pub use regex_filter::{CreateRegexFilterRequest, RegexFilterResponse, UpdateRegexFilterRequest};
 
 pub use blocklist::BlocklistResponse;
 pub use blocklist_source::{

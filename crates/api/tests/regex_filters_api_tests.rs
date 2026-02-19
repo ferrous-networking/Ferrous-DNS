@@ -568,7 +568,12 @@ async fn test_get_regex_filter_by_id_found() {
         .await
         .unwrap();
 
-    let create_body = create_response.into_body().collect().await.unwrap().to_bytes();
+    let create_body = create_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let created: Value = serde_json::from_slice(&create_body).unwrap();
     let id = created["id"].as_i64().unwrap();
 
@@ -635,7 +640,12 @@ async fn test_update_regex_filter_toggle_enabled() {
         .await
         .unwrap();
 
-    let create_body = create_response.into_body().collect().await.unwrap().to_bytes();
+    let create_body = create_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let created: Value = serde_json::from_slice(&create_body).unwrap();
     let id = created["id"].as_i64().unwrap();
 
@@ -681,7 +691,12 @@ async fn test_update_regex_filter_change_pattern() {
         .await
         .unwrap();
 
-    let create_body = create_response.into_body().collect().await.unwrap().to_bytes();
+    let create_body = create_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let created: Value = serde_json::from_slice(&create_body).unwrap();
     let id = created["id"].as_i64().unwrap();
 
@@ -727,7 +742,12 @@ async fn test_update_regex_filter_invalid_pattern() {
         .await
         .unwrap();
 
-    let create_body = create_response.into_body().collect().await.unwrap().to_bytes();
+    let create_body = create_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let created: Value = serde_json::from_slice(&create_body).unwrap();
     let id = created["id"].as_i64().unwrap();
 
@@ -792,7 +812,12 @@ async fn test_delete_regex_filter_success() {
         .await
         .unwrap();
 
-    let create_body = create_response.into_body().collect().await.unwrap().to_bytes();
+    let create_body = create_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let created: Value = serde_json::from_slice(&create_body).unwrap();
     let id = created["id"].as_i64().unwrap();
 
@@ -993,7 +1018,12 @@ async fn test_regex_filter_update_group() {
         .await
         .unwrap();
 
-    let create_body = create_response.into_body().collect().await.unwrap().to_bytes();
+    let create_body = create_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let created: Value = serde_json::from_slice(&create_body).unwrap();
     let id = created["id"].as_i64().unwrap();
 
