@@ -150,7 +150,11 @@ impl DnsCache {
             record.record_hit();
             let remaining_ttl = record.expires_at_secs.saturating_sub(now_secs) as u32;
             self.promote_to_l1(domain.as_ref(), record_type, record, now_secs);
-            return Some((record.data.clone(), Some(record.dnssec_status), Some(remaining_ttl)));
+            return Some((
+                record.data.clone(),
+                Some(record.dnssec_status),
+                Some(remaining_ttl),
+            ));
         }
 
         self.metrics.misses.fetch_add(1, AtomicOrdering::Relaxed);
@@ -264,9 +268,9 @@ impl DnsCache {
 
     pub fn get_remaining_ttl(&self, domain: &str, record_type: &RecordType) -> Option<u32> {
         let key = CacheKey::from_str(domain, *record_type);
-        self.cache.get(&key).map(|entry| {
-            entry.expires_at_secs.saturating_sub(coarse_now_secs()) as u32
-        })
+        self.cache
+            .get(&key)
+            .map(|entry| entry.expires_at_secs.saturating_sub(coarse_now_secs()) as u32)
     }
 
     pub fn strategy(&self) -> EvictionStrategy {

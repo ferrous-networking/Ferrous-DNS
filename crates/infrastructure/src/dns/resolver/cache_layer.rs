@@ -31,9 +31,8 @@ impl CachedResolver {
     }
 
     fn check_cache(&self, query: &DnsQuery) -> Option<DnsResolution> {
-        self.cache
-            .get(&query.domain, &query.record_type)
-            .map(|(data, dnssec_status, remaining_ttl)| {
+        self.cache.get(&query.domain, &query.record_type).map(
+            |(data, dnssec_status, remaining_ttl)| {
                 debug!(
                     domain = %query.domain,
                     record_type = %query.record_type,
@@ -70,7 +69,8 @@ impl CachedResolver {
                         min_ttl: remaining_ttl,
                     },
                 }
-            })
+            },
+        )
     }
 
     fn store_in_cache(&self, query: &DnsQuery, resolution: &DnsResolution) {

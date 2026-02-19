@@ -47,9 +47,7 @@ impl QueryEventLogger {
 
                     debug!(
                         batch_size,
-                        total_events,
-                        total_batches,
-                        "QueryEventLogger: Processing batch"
+                        total_events, total_batches, "QueryEventLogger: Processing batch"
                     );
 
                     Self::process_batch(repo, events).await;

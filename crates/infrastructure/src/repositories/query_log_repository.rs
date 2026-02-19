@@ -130,7 +130,7 @@ fn row_to_query_log(row: SqliteRow) -> Option<QueryLog> {
         client_ip: client_ip_str.parse().ok()?,
         blocked: row.get::<i64, _>("blocked") != 0,
         response_time_us: row
-            .get::<Option<i64>, _>("response_time_ms")  // column kept as-is (SQLite no ALTER COLUMN)
+            .get::<Option<i64>, _>("response_time_ms") // column kept as-is (SQLite no ALTER COLUMN)
             .map(|t| t as u64),
         cache_hit: row.get::<i64, _>("cache_hit") != 0,
         cache_refresh: row.get::<i64, _>("cache_refresh") != 0,

@@ -166,11 +166,15 @@ fn test_lfu_eviction_respects_min_frequency() {
 
     // domain0 (5 hits) and domain2 (4 hits) should still be present
     assert!(
-        cache.get(&Arc::from("domain0.com"), &RecordType::A).is_some(),
+        cache
+            .get(&Arc::from("domain0.com"), &RecordType::A)
+            .is_some(),
         "domain0 with 5 hits should survive eviction"
     );
     assert!(
-        cache.get(&Arc::from("domain2.com"), &RecordType::A).is_some(),
+        cache
+            .get(&Arc::from("domain2.com"), &RecordType::A)
+            .is_some(),
         "domain2 with 4 hits should survive eviction"
     );
 }
@@ -206,7 +210,9 @@ fn test_lfu_eviction_without_min_frequency() {
 
     // domain0 with many hits should survive
     assert!(
-        cache.get(&Arc::from("domain0.com"), &RecordType::A).is_some(),
+        cache
+            .get(&Arc::from("domain0.com"), &RecordType::A)
+            .is_some(),
         "domain0 with 10 hits should survive eviction with min_frequency=0"
     );
 }
@@ -242,7 +248,9 @@ fn test_lfuk_eviction_respects_min_score() {
 
     // domain0 with many hits should survive
     assert!(
-        cache.get(&Arc::from("domain0.com"), &RecordType::A).is_some(),
+        cache
+            .get(&Arc::from("domain0.com"), &RecordType::A)
+            .is_some(),
         "domain0 with high LFUK score should survive eviction"
     );
 }
