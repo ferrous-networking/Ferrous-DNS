@@ -1,4 +1,5 @@
 use super::bloom::AtomicBloom;
+use super::coarse_clock::coarse_now_secs;
 use super::eviction::EvictionStrategy;
 use super::key::{BorrowedKey, CacheKey};
 use super::l1::{l1_get, l1_insert};
@@ -123,20 +124,21 @@ impl DnsCache {
         if let Some(entry) = self.cache.get(&key) {
             let record = entry.value();
 
-            // Compute Instant::now() once and reuse for all time-based checks to
-            // avoid multiple VDSO calls (~20–30 ns each) in the hot path.
-            let now = std::time::Instant::now();
+            // coarse_now_secs() is an AtomicU64 load (~3 ns) — no VDSO/syscall.
+            // All expiry checks use second-level precision, which is sufficient
+            // for DNS TTL management.
+            let now_secs = coarse_now_secs();
 
-            if record.is_stale_usable_at(now) {
+            if record.is_stale_usable_at_secs(now_secs) {
                 record.refreshing.swap(true, AtomicOrdering::Acquire);
                 self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
                 record.record_hit();
-                self.promote_to_l1(domain, record_type, record, now);
+                self.promote_to_l1(domain, record_type, record, now_secs);
                 // Stale-but-usable: TTL already past, report 0 to the caller.
                 return Some((record.data.clone(), Some(record.dnssec_status), Some(0)));
             }
 
-            if record.is_expired_at(now) {
+            if record.is_expired_at_secs(now_secs) {
                 drop(entry);
                 self.lazy_remove(&key);
                 self.metrics.misses.fetch_add(1, AtomicOrdering::Relaxed);
@@ -145,11 +147,8 @@ impl DnsCache {
 
             self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
             record.record_hit();
-            // Compute remaining TTL from the absolute expiry timestamp already
-            // stored in the record — no extra Instant::now() call needed here
-            // since `now` was already computed above.
-            let remaining_ttl = record.expires_at.duration_since(now).as_secs() as u32;
-            self.promote_to_l1(domain, record_type, record, now);
+            let remaining_ttl = record.expires_at_secs.saturating_sub(now_secs) as u32;
+            self.promote_to_l1(domain, record_type, record, now_secs);
             return Some((record.data.clone(), Some(record.dnssec_status), Some(remaining_ttl)));
         }
 
@@ -265,8 +264,7 @@ impl DnsCache {
     pub fn get_remaining_ttl(&self, domain: &str, record_type: &RecordType) -> Option<u32> {
         let key = CacheKey::new(domain, *record_type);
         self.cache.get(&key).map(|entry| {
-            let elapsed = entry.inserted_at.elapsed().as_secs() as u32;
-            entry.ttl.saturating_sub(elapsed)
+            entry.expires_at_secs.saturating_sub(coarse_now_secs()) as u32
         })
     }
 
@@ -279,16 +277,15 @@ impl DnsCache {
         domain: &str,
         record_type: &RecordType,
         record: &CachedRecord,
-        now: std::time::Instant,
+        now_secs: u64,
     ) {
         if let CachedData::IpAddresses(ref addresses) = record.data {
-            // Use the remaining TTL (expires_at − now) rather than the original
-            // TTL so that L1 never serves a record past its L2 expiry.
+            // Use remaining TTL (expires_at_secs − now_secs) so L1 never
+            // serves a record past its L2 expiry.
             // Example: TTL=300, promoted at T=150 → remaining=150, not 300.
-            let remaining_secs = if record.expires_at > now {
-                record.expires_at.duration_since(now).as_secs() as u32
-            } else {
-                return; // already expired, skip promotion
+            let remaining_secs = match record.expires_at_secs.checked_sub(now_secs) {
+                Some(r) if r > 0 => r as u32,
+                _ => return, // already expired, skip promotion
             };
 
             l1_insert(domain, record_type, Arc::clone(addresses), remaining_secs);
@@ -395,9 +392,10 @@ impl DnsCache {
             EvictionStrategy::LFUK => {
                 let access_time = record.last_access.load(AtomicOrdering::Relaxed) as f64;
                 let hits = record.hit_count.load(AtomicOrdering::Relaxed) as f64;
-                let now = super::coarse_clock::coarse_now_secs() as f64;
-                let inserted_unix = record.inserted_at.elapsed().as_secs() as f64;
-                let age = now - inserted_unix;
+                let now = coarse_now_secs() as f64;
+                // inserted_at_secs is a Unix timestamp; `age` here represents
+                // approximately the insertion epoch (matching prior behaviour).
+                let age = record.inserted_at_secs as f64;
                 let k_value = 0.5;
                 let score = hits / (age.powf(k_value).max(1.0)) * (1.0 / (now - access_time + 1.0));
                 if self.min_lfuk_score > 0.0 && score < self.min_lfuk_score {
