@@ -110,6 +110,14 @@ impl ChainVerifier {
                 Ok(()) => {
                     debug!(domain = %child_domain, "Delegation validated");
                 }
+                Err(DomainError::InsecureDelegation) => {
+                    debug!(
+                        parent = %current_domain,
+                        child = %child_domain,
+                        "Insecure delegation: no DS records, chain is unsigned"
+                    );
+                    return Ok(ValidationResult::Insecure);
+                }
                 Err(e) => {
                     warn!(
                         parent = %current_domain,
@@ -142,9 +150,7 @@ impl ChainVerifier {
 
         if ds_records.is_empty() {
             debug!(domain = %child_domain, "No DS records found (insecure delegation)");
-            return Err(DomainError::InvalidDnsResponse(
-                "No DS records found".into(),
-            ));
+            return Err(DomainError::InsecureDelegation);
         }
 
         // 2. Query DNSKEY records (also extracts RRSIGs from same response)
