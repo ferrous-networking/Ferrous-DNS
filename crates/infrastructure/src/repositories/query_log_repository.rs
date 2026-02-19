@@ -13,6 +13,31 @@ const CHANNEL_CAPACITY: usize = 10_000;
 const MAX_BATCH_SIZE: usize = 500;
 const FLUSH_INTERVAL_MS: u64 = 100;
 
+/// Number of columns per row in `query_log` INSERT.
+const COLS_PER_ROW: usize = 12;
+/// SQLite's default SQLITE_LIMIT_VARIABLE_NUMBER is 999.
+/// Each chunk inserts at most this many rows in a single statement.
+const ROWS_PER_CHUNK: usize = 999 / COLS_PER_ROW; // 83
+
+/// Build `INSERT INTO query_log (...) VALUES (?,…), (?,…), …` for `n` rows.
+fn build_multi_insert_sql(n: usize) -> String {
+    debug_assert!(n > 0 && n <= ROWS_PER_CHUNK);
+    const HEADER: &str = "INSERT INTO query_log \
+        (domain, record_type, client_ip, blocked, response_time_ms, cache_hit, \
+         cache_refresh, dnssec_status, upstream_server, response_status, query_source, group_id) \
+        VALUES ";
+    const PLACEHOLDER: &str = "(?,?,?,?,?,?,?,?,?,?,?,?)";
+    let mut sql = String::with_capacity(HEADER.len() + n * (PLACEHOLDER.len() + 1));
+    sql.push_str(HEADER);
+    for i in 0..n {
+        if i > 0 {
+            sql.push(',');
+        }
+        sql.push_str(PLACEHOLDER);
+    }
+    sql
+}
+
 struct QueryLogEntry {
     domain: CompactString,
     record_type: CompactString,
@@ -145,38 +170,32 @@ impl SqliteQueryLogRepository {
             }
         };
 
-        let insert_sql = "INSERT INTO query_log \
-            (domain, record_type, client_ip, blocked, response_time_ms, cache_hit, \
-             cache_refresh, dnssec_status, upstream_server, response_status, query_source, group_id) \
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let mut inserted = 0usize;
+        let mut errors = 0usize;
 
-        let mut inserted = 0;
-        let mut errors = 0;
-
-        for entry in batch.iter() {
-            let result = sqlx::query(insert_sql)
-                .bind(entry.domain.as_str())
-                .bind(entry.record_type.as_str())
-                .bind(entry.client_ip.as_ref())
-                .bind(if entry.blocked { 1i64 } else { 0 })
-                .bind(entry.response_time_ms)
-                .bind(if entry.cache_hit { 1i64 } else { 0 })
-                .bind(if entry.cache_refresh { 1i64 } else { 0 })
-                .bind(entry.dnssec_status)
-                .bind(entry.upstream_server.as_ref().map(|s| s.as_ref()))
-                .bind(entry.response_status)
-                .bind(entry.query_source.as_str())
-                .bind(entry.group_id)
-                .execute(&mut *tx)
-                .await;
-
-            match result {
-                Ok(_) => inserted += 1,
+        for chunk in batch.chunks(ROWS_PER_CHUNK) {
+            let sql = build_multi_insert_sql(chunk.len());
+            let mut q = sqlx::query(&sql);
+            for entry in chunk {
+                q = q
+                    .bind(entry.domain.as_str())
+                    .bind(entry.record_type.as_str())
+                    .bind(entry.client_ip.as_ref())
+                    .bind(if entry.blocked { 1i64 } else { 0i64 })
+                    .bind(entry.response_time_ms)
+                    .bind(if entry.cache_hit { 1i64 } else { 0i64 })
+                    .bind(if entry.cache_refresh { 1i64 } else { 0i64 })
+                    .bind(entry.dnssec_status)
+                    .bind(entry.upstream_server.as_deref())
+                    .bind(entry.response_status)
+                    .bind(entry.query_source.as_str())
+                    .bind(entry.group_id);
+            }
+            match q.execute(&mut *tx).await {
+                Ok(r) => inserted += r.rows_affected() as usize,
                 Err(e) => {
-                    errors += 1;
-                    if errors <= 3 {
-                        warn!(error = %e, domain = %entry.domain, "Failed to insert query log entry");
-                    }
+                    errors += chunk.len();
+                    warn!(error = %e, chunk_size = chunk.len(), "Failed to insert query log chunk");
                 }
             }
         }
@@ -189,7 +208,7 @@ impl SqliteQueryLogRepository {
                     errors,
                     duration_ms = elapsed.as_millis(),
                     throughput = (inserted as f64 / elapsed.as_secs_f64()) as u64,
-                    "Batch flushed with prepared statement"
+                    "Batch flushed"
                 );
             }
             Err(e) => {
