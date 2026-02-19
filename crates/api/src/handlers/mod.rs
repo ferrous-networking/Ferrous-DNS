@@ -12,6 +12,7 @@ pub mod hostname;
 pub mod local_records;
 pub mod managed_domains;
 pub mod manual_clients;
+pub mod regex_filters;
 pub mod queries;
 pub mod rate;
 pub mod stats;

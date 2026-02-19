@@ -9,6 +9,7 @@ pub mod dns;
 pub mod groups;
 pub mod managed_domains;
 pub mod queries;
+pub mod regex_filters;
 pub mod whitelist;
 pub mod whitelist_sources;
 
@@ -35,6 +36,10 @@ pub use groups::{
 pub use managed_domains::{
     CreateManagedDomainUseCase, DeleteManagedDomainUseCase, GetManagedDomainsUseCase,
     UpdateManagedDomainUseCase,
+};
+pub use regex_filters::{
+    CreateRegexFilterUseCase, DeleteRegexFilterUseCase, GetRegexFiltersUseCase,
+    UpdateRegexFilterUseCase,
 };
 pub use queries::{
     CleanupOldQueryLogsUseCase, GetQueryRateUseCase, GetQueryStatsUseCase, GetRecentQueriesUseCase,
