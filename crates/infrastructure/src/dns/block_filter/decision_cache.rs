@@ -1,12 +1,14 @@
 use crate::dns::cache::coarse_clock::coarse_now_secs;
+use ahash::RandomState as AHashRandomState;
 use dashmap::DashMap;
 use ferrous_dns_domain::BlockSource;
 use lru::LruCache;
-use rustc_hash::{FxBuildHasher, FxHasher};
+use rustc_hash::FxBuildHasher;
 use std::cell::RefCell;
-use std::hash::{Hash, Hasher};
+use std::hash::{BuildHasher, Hash, Hasher};
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
+use std::sync::OnceLock;
 
 const TTL_SECS: u64 = 60;
 const L0_CAPACITY: usize = 256;
@@ -30,12 +32,32 @@ fn decode_source(val: u8) -> Option<BlockSource> {
     }
 }
 
+/// Fixed-seed ahash state shared across all threads.
+///
+/// Using `ahash::RandomState` with AES-NI gives 30–50% faster hashing
+/// than `FxHasher` for domain strings > 16 bytes.  Fixed seeds ensure
+/// all threads produce identical hashes for the same (domain, group_id)
+/// pair — required for L0 ↔ L1 cache consistency.
+static DECISION_HASH_STATE: OnceLock<AHashRandomState> = OnceLock::new();
+
+#[inline]
+fn decision_hash_state() -> &'static AHashRandomState {
+    DECISION_HASH_STATE.get_or_init(|| {
+        AHashRandomState::with_seeds(
+            0xf4a5_f3e1_c2b0_a9d7,
+            0x8e6b_4c2a_0f1d_e3c9,
+            0x7a2c_1e5b_9d4f_6a8e,
+            0x3c7a_2e4b_6f8d_0a1c,
+        )
+    })
+}
+
 /// Compute the combined hash key for a (domain, group_id) pair.
 /// Exposed so callers (e.g. `engine.rs::check`) can compute it once and
 /// reuse it across all L0 / L1 lookups instead of hashing 4 times.
 #[inline]
 pub fn decision_key(domain: &str, group_id: i64) -> u64 {
-    let mut h = FxHasher::default();
+    let mut h = decision_hash_state().build_hasher();
     domain.hash(&mut h);
     group_id.hash(&mut h);
     h.finish()

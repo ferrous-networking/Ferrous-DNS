@@ -25,6 +25,7 @@ hostname.workspace = true
 dashmap.workspace = true
 futures.workspace = true
 rustc-hash.workspace = true
+ahash.workspace = true
 compact_str.workspace = true
 smallvec.workspace = true
 
