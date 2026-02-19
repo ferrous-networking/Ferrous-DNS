@@ -49,12 +49,10 @@ impl QueryEventLogger {
                         batch_size,
                         total_events,
                         total_batches,
-                        "QueryEventLogger: Spawning batch processing task"
+                        "QueryEventLogger: Processing batch"
                     );
 
-                    tokio::spawn(async move {
-                        Self::process_batch(repo, events).await;
-                    });
+                    Self::process_batch(repo, events).await;
                 }
             }
 
