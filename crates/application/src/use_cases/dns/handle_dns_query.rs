@@ -9,13 +9,6 @@ use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-// ---------------------------------------------------------------------------
-// Thread-local client tracking rate limiter
-// ---------------------------------------------------------------------------
-
-// Per-thread map from client IP to the last time `update_last_seen` was spawned.
-// Suppresses redundant DB spawns when the same IP sends queries faster than
-// once per 60 s. Reduces SQLite write pressure dramatically at high QPS.
 thread_local! {
     static LAST_SEEN_TRACKER: RefCell<HashMap<IpAddr, Instant>> =
         RefCell::new(HashMap::new());
@@ -83,10 +76,7 @@ impl HandleDnsQueryUseCase {
             }
         }
 
-        // Resolve which group this client belongs to
         let group_id = self.block_filter.resolve_group(request.client_ip);
-
-        // Check block filter pipeline (L0 thread-local → L1 shared cache → BlockIndex)
         let decision = self.block_filter.check(&request.domain, group_id);
 
         if matches!(decision, FilterDecision::Block) {

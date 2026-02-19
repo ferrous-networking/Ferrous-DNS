@@ -18,14 +18,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{error, info, warn};
 
-// ---------------------------------------------------------------------------
-// Thread-local group resolution cache (L−1)
-// ---------------------------------------------------------------------------
-
-/// Per-thread LRU mapping IP → (group_id, expiry).
-///
-/// Avoids the DashMap + ArcSwap + CIDR scan (~250 ns) on every query.
-/// TTL of 60 s matches the client-group reload cadence.
 type GroupL0Cache = LruCache<IpAddr, (i64, Instant), FxBuildHasher>;
 
 thread_local! {
@@ -36,43 +28,17 @@ thread_local! {
         ));
 }
 
-/// The Block Filter Engine.
-///
-/// All filtering state lives in memory. The compiled `BlockIndex` is swapped
-/// atomically via `ArcSwap` during `reload()` — no downtime, no lock contention.
-///
-/// Group resolution order:
-///   1. Explicit client → group DashMap (~50 ns)
-///   2. CIDR SubnetMatcher (~200 ns)
-///   3. Default group id fallback
 pub struct BlockFilterEngine {
-    /// Current compiled block index. Swapped atomically on reload.
     index: ArcSwap<BlockIndex>,
-
-    /// Shared Block Decision Cache (L1). Cleared after each index swap.
     decision_cache: BlockDecisionCache,
-
-    /// Explicit IP → group_id mapping loaded from the `clients` table.
     client_groups: Arc<DashMap<IpAddr, i64, FxBuildHasher>>,
-
-    /// CIDR-based subnet → group_id mapping. Replaced atomically.
     subnet_matcher: ArcSwap<Option<SubnetMatcher>>,
-
-    /// Fallback group used when no explicit or subnet match is found.
     default_group_id: i64,
-
-    /// Database connection pool (used in `reload` and `load_client_groups`).
     pool: SqlitePool,
-
-    /// Persistent HTTP client. Avoids recreating the connection pool on reload.
     http_client: reqwest::Client,
 }
 
 impl BlockFilterEngine {
-    /// Create and initialise the engine.
-    ///
-    /// Compiles the initial `BlockIndex` from the database and any HTTP sources.
-    /// Also loads the initial client→group assignments.
     pub async fn new(pool: SqlitePool, default_group_id: i64) -> Result<Self, DomainError> {
         let http_client = reqwest::Client::builder()
             .user_agent("Ferrous-DNS/1.0 (blocklist-sync)")
@@ -99,18 +65,11 @@ impl BlockFilterEngine {
         Ok(engine)
     }
 
-    // ------------------------------------------------------------------
-    // Internal helpers
-    // ------------------------------------------------------------------
-
-    /// Resolve a client IP to its group_id without consulting the thread-local cache.
     fn resolve_group_uncached(&self, ip: IpAddr) -> i64 {
-        // 1. Explicit mapping
         if let Some(gid) = self.client_groups.get(&ip) {
             return *gid;
         }
 
-        // 2. CIDR subnet
         let guard = self.subnet_matcher.load();
         if let Some(matcher) = guard.as_ref() {
             if let Some(gid) = matcher.find_group_for_ip(ip) {
@@ -118,13 +77,10 @@ impl BlockFilterEngine {
             }
         }
 
-        // 3. Default
         self.default_group_id
     }
 
-    /// Load/reload client→group and subnet→group assignments from the DB.
     async fn load_client_groups_inner(&self) -> Result<(), DomainError> {
-        // Explicit IP → group_id
         let client_rows =
             sqlx::query("SELECT ip_address, group_id FROM clients WHERE group_id IS NOT NULL")
                 .fetch_all(&self.pool)
@@ -140,7 +96,6 @@ impl BlockFilterEngine {
             }
         }
 
-        // CIDR subnets → group_id
         let subnet_rows = sqlx::query(
             "SELECT subnet_cidr, group_id FROM client_subnets ORDER BY length(subnet_cidr) DESC",
         )
@@ -175,22 +130,10 @@ impl BlockFilterEngine {
     }
 }
 
-// ---------------------------------------------------------------------------
-// BlockFilterEnginePort implementation
-// ---------------------------------------------------------------------------
-
 #[async_trait]
 impl BlockFilterEnginePort for BlockFilterEngine {
-    /// Resolve a client IP to its group_id.
-    ///
-    /// Resolution order:
-    ///   L−1: thread-local LRU (TTL 60 s)  (~10 ns hit, ≥99% after warmup)
-    ///   1.   Explicit DashMap              (~50 ns)
-    ///   2.   CIDR SubnetMatcher            (~200 ns)
-    ///   3.   Default group fallback
     #[inline]
     fn resolve_group(&self, ip: IpAddr) -> i64 {
-        // L−1: thread-local cache
         if let Some(gid) = GROUP_L0.with(|c| {
             let mut cache = c.borrow_mut();
             if let Some(&(gid, expires)) = cache.get(&ip) {
@@ -212,15 +155,8 @@ impl BlockFilterEnginePort for BlockFilterEngine {
         gid
     }
 
-    /// Check whether `domain` is blocked for `group_id`.
-    ///
-    /// Decision pipeline:
-    ///   L0: thread-local LRU           (~10 ns)
-    ///   L1: shared DashMap (TTL 60 s)  (~50 ns)
-    ///   L2+: BlockIndex pipeline       (~80–2000 ns)
     #[inline]
     fn check(&self, domain: &str, group_id: i64) -> FilterDecision {
-        // L0: thread-local
         if let Some(blocked) = decision_l0_get(domain, group_id) {
             return if blocked {
                 FilterDecision::Block
@@ -229,7 +165,6 @@ impl BlockFilterEnginePort for BlockFilterEngine {
             };
         }
 
-        // L1: shared DashMap
         if let Some(blocked) = self.decision_cache.get(domain, group_id) {
             decision_l0_set(domain, group_id, blocked);
             return if blocked {
@@ -239,11 +174,9 @@ impl BlockFilterEnginePort for BlockFilterEngine {
             };
         }
 
-        // L2+: full BlockIndex pipeline
         let guard = self.index.load();
         let blocked = guard.is_blocked(domain, group_id);
 
-        // Populate both caches
         self.decision_cache.set(domain, group_id, blocked);
         decision_l0_set(domain, group_id, blocked);
 
@@ -254,11 +187,6 @@ impl BlockFilterEnginePort for BlockFilterEngine {
         }
     }
 
-    /// Recompile the `BlockIndex` from DB + HTTP and atomically swap it.
-    ///
-    /// After swapping, the shared Decision Cache (L1) is cleared so stale
-    /// decisions do not persist. The per-thread L0 caches are cleared on the
-    /// calling thread; other threads will naturally expire stale entries via TTL.
     async fn reload(&self) -> Result<(), DomainError> {
         info!("Block filter reload started");
 
@@ -271,7 +199,6 @@ impl BlockFilterEnginePort for BlockFilterEngine {
 
         self.index.store(Arc::new(new_index));
 
-        // Clear caches after swap
         self.decision_cache.clear();
         decision_l0_clear();
 
@@ -279,7 +206,6 @@ impl BlockFilterEnginePort for BlockFilterEngine {
         Ok(())
     }
 
-    /// Reload client→group assignments from the `clients` and `client_subnets` tables.
     async fn load_client_groups(&self) -> Result<(), DomainError> {
         self.load_client_groups_inner().await
     }
