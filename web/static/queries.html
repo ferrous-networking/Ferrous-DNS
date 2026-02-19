@@ -377,7 +377,7 @@
             },
 
             formatResponseTime(query) {
-                const us = query.response_time_ms || 0;
+                const us = query.response_time_us || 0;
                 if (!us) return '-';
                 if (us < 1000) return `${Math.round(us)} µs`;
                 if (us < 1000000) return `${Math.round(us / 1000)} ms`;

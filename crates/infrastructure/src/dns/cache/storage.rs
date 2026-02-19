@@ -161,17 +161,28 @@ impl DnsCache {
         dnssec_status: Option<DnssecStatus>,
     ) {
         let key = CacheKey::new(domain, record_type);
-        if !self.cache.contains_key(&key) {
-            self.bloom.set(&key);
-        }
 
+        // Size check before acquiring the entry lock to avoid deadlocking
+        // with DashMap's internal shard locking in len().
         if self.cache.len() >= self.max_entries {
             self.evict_entries();
         }
 
         let use_lfuk = matches!(self.eviction_strategy, EvictionStrategy::LFUK);
         let record = CachedRecord::new(data.clone(), ttl, record_type, use_lfuk, dnssec_status);
-        self.cache.insert(key, record);
+
+        // Single write-lock via entry() replaces the previous contains_key (read
+        // lock) + insert (write lock) pair, eliminating one lock acquisition and
+        // the TOCTOU race between them.
+        match self.cache.entry(key) {
+            dashmap::Entry::Vacant(e) => {
+                self.bloom.set(e.key());
+                e.insert(record);
+            }
+            dashmap::Entry::Occupied(mut e) => {
+                e.insert(record);
+            }
+        }
 
         if let CachedData::IpAddresses(ref addresses) = data {
             l1_insert(domain, &record_type, Arc::clone(addresses), ttl);

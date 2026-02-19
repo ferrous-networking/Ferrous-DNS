@@ -77,7 +77,7 @@ impl QueryEventLogger {
                     .parse::<IpAddr>()
                     .unwrap_or_else(|_| IpAddr::from([127, 0, 0, 1])),
                 blocked: false,
-                response_time_ms: Some(event.response_time_us),
+                response_time_us: Some(event.response_time_us),
                 cache_hit: false,
                 cache_refresh: false,
                 dnssec_status: None,
@@ -128,7 +128,7 @@ impl QueryEventLogger {
                     record_type: event.record_type,
                     client_ip: "127.0.0.1".parse().unwrap(),
                     blocked: false,
-                    response_time_ms: Some(event.response_time_us),
+                    response_time_us: Some(event.response_time_us),
                     cache_hit: false,
                     cache_refresh: false,
                     dnssec_status: None,

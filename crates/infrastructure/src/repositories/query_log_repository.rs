@@ -61,7 +61,7 @@ impl QueryLogEntry {
             record_type: CompactString::from(q.record_type.as_str()),
             client_ip: Arc::from(q.client_ip.to_string()),
             blocked: q.blocked,
-            response_time_ms: q.response_time_ms.map(|t| t as i64),
+            response_time_ms: q.response_time_us.map(|t| t as i64),
             cache_hit: q.cache_hit,
             cache_refresh: q.cache_refresh,
             dnssec_status: q.dnssec_status,
@@ -129,8 +129,8 @@ fn row_to_query_log(row: SqliteRow) -> Option<QueryLog> {
         record_type: record_type_str.parse().ok()?,
         client_ip: client_ip_str.parse().ok()?,
         blocked: row.get::<i64, _>("blocked") != 0,
-        response_time_ms: row
-            .get::<Option<i64>, _>("response_time_ms")
+        response_time_us: row
+            .get::<Option<i64>, _>("response_time_ms")  // column kept as-is (SQLite no ALTER COLUMN)
             .map(|t| t as u64),
         cache_hit: row.get::<i64, _>("cache_hit") != 0,
         cache_refresh: row.get::<i64, _>("cache_refresh") != 0,
