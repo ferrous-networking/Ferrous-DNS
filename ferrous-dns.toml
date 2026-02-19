@@ -21,6 +21,13 @@ cache_lfuk_history_size = 10
 cache_batch_eviction_percentage = 0.1
 cache_compaction_interval = 600
 cache_adaptive_thresholds = false
+# Número de shards internos do cache (DashMap).
+# Mais shards = menos contenção em servidores com muitos cores, mas mais uso de RAM.
+# Regra geral: 4× o número de cores da CPU, arredondado para potência de 2.
+#   Servidor comum (8-16 cores) → 64  (padrão)
+#   Raspberry Pi 4 (4 cores)    → 16  (~5 MB menos de RAM)
+#   Máquina potente (32+ cores) → 128
+cache_shard_amount = 64
 block_private_ptr = true
 block_non_fqdn = true
 local_domain = "lan"
