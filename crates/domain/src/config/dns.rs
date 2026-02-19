@@ -200,5 +200,11 @@ fn default_cache_adaptive_thresholds() -> bool {
 }
 
 fn default_cache_shard_amount() -> usize {
-    64
+    // Auto-detect: 4× CPU cores, rounded up to the next power of two.
+    // Examples: RPi 4 (4 cores) → 16, 8-core server → 32, 16-core → 64.
+    // Clamped to [8, 256] to stay sensible on exotic hardware.
+    let cpus = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
+    (cpus * 4).next_power_of_two().clamp(8, 256)
 }
