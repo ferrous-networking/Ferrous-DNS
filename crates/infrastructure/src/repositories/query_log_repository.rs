@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use compact_str::CompactString;
 use ferrous_dns_application::ports::QueryLogRepository;
 use ferrous_dns_domain::{DomainError, QueryLog, QuerySource, QueryStats};
-use sqlx::{Row, SqlitePool};
+use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -93,6 +93,43 @@ fn to_static_response_status(s: &str) -> Option<&'static str> {
         "BLOCKED" => Some("BLOCKED"),
         _ => None,
     }
+}
+
+fn row_to_query_log(row: SqliteRow) -> Option<QueryLog> {
+    let client_ip_str: String = row.get("client_ip");
+    let record_type_str: String = row.get("record_type");
+    let domain_str: String = row.get("domain");
+
+    let dnssec_status: Option<&'static str> = row
+        .get::<Option<String>, _>("dnssec_status")
+        .and_then(|s| to_static_dnssec(&s));
+    let response_status: Option<&'static str> = row
+        .get::<Option<String>, _>("response_status")
+        .and_then(|s| to_static_response_status(&s));
+
+    let query_source_str: String = row
+        .get::<Option<String>, _>("query_source")
+        .unwrap_or_else(|| "client".to_string());
+    let query_source = QuerySource::from_str(&query_source_str).unwrap_or(QuerySource::Client);
+
+    Some(QueryLog {
+        id: Some(row.get("id")),
+        domain: Arc::from(domain_str.as_str()),
+        record_type: record_type_str.parse().ok()?,
+        client_ip: client_ip_str.parse().ok()?,
+        blocked: row.get::<i64, _>("blocked") != 0,
+        response_time_ms: row
+            .get::<Option<i64>, _>("response_time_ms")
+            .map(|t| t as u64),
+        cache_hit: row.get::<i64, _>("cache_hit") != 0,
+        cache_refresh: row.get::<i64, _>("cache_refresh") != 0,
+        dnssec_status,
+        upstream_server: row.get::<Option<String>, _>("upstream_server"),
+        response_status,
+        timestamp: Some(row.get("created_at")),
+        query_source,
+        group_id: row.get("group_id"),
+    })
 }
 
 pub struct SqliteQueryLogRepository {
@@ -266,46 +303,7 @@ impl QueryLogRepository for SqliteQueryLogRepository {
             DomainError::InvalidDomainName(format!("Database error: {}", e))
         })?;
 
-        let entries: Vec<QueryLog> = rows
-            .into_iter()
-            .filter_map(|row| {
-                let client_ip_str: String = row.get("client_ip");
-                let record_type_str: String = row.get("record_type");
-                let domain_str: String = row.get("domain");
-
-                let dnssec_status: Option<&'static str> = row
-                    .get::<Option<String>, _>("dnssec_status")
-                    .and_then(|s| to_static_dnssec(&s));
-                let response_status: Option<&'static str> = row
-                    .get::<Option<String>, _>("response_status")
-                    .and_then(|s| to_static_response_status(&s));
-
-                let query_source_str: String = row
-                    .get::<Option<String>, _>("query_source")
-                    .unwrap_or_else(|| "client".to_string());
-                let query_source =
-                    QuerySource::from_str(&query_source_str).unwrap_or(QuerySource::Client);
-
-                Some(QueryLog {
-                    id: Some(row.get("id")),
-                    domain: Arc::from(domain_str.as_str()),
-                    record_type: record_type_str.parse().ok()?,
-                    client_ip: client_ip_str.parse().ok()?,
-                    blocked: row.get::<i64, _>("blocked") != 0,
-                    response_time_ms: row
-                        .get::<Option<i64>, _>("response_time_ms")
-                        .map(|t| t as u64),
-                    cache_hit: row.get::<i64, _>("cache_hit") != 0,
-                    cache_refresh: row.get::<i64, _>("cache_refresh") != 0,
-                    dnssec_status,
-                    upstream_server: row.get::<Option<String>, _>("upstream_server"),
-                    response_status,
-                    timestamp: Some(row.get("created_at")),
-                    query_source,
-                    group_id: row.get("group_id"),
-                })
-            })
-            .collect();
+        let entries: Vec<QueryLog> = rows.into_iter().filter_map(row_to_query_log).collect();
 
         debug!(count = entries.len(), "Recent queries fetched successfully");
         Ok(entries)
@@ -357,46 +355,7 @@ impl QueryLogRepository for SqliteQueryLogRepository {
             DomainError::InvalidDomainName(format!("Database error: {}", e))
         })?;
 
-        let entries: Vec<QueryLog> = rows
-            .into_iter()
-            .filter_map(|row| {
-                let client_ip_str: String = row.get("client_ip");
-                let record_type_str: String = row.get("record_type");
-                let domain_str: String = row.get("domain");
-
-                let dnssec_status: Option<&'static str> = row
-                    .get::<Option<String>, _>("dnssec_status")
-                    .and_then(|s| to_static_dnssec(&s));
-                let response_status: Option<&'static str> = row
-                    .get::<Option<String>, _>("response_status")
-                    .and_then(|s| to_static_response_status(&s));
-
-                let query_source_str: String = row
-                    .get::<Option<String>, _>("query_source")
-                    .unwrap_or_else(|| "client".to_string());
-                let query_source =
-                    QuerySource::from_str(&query_source_str).unwrap_or(QuerySource::Client);
-
-                Some(QueryLog {
-                    id: Some(row.get("id")),
-                    domain: Arc::from(domain_str.as_str()),
-                    record_type: record_type_str.parse().ok()?,
-                    client_ip: client_ip_str.parse().ok()?,
-                    blocked: row.get::<i64, _>("blocked") != 0,
-                    response_time_ms: row
-                        .get::<Option<i64>, _>("response_time_ms")
-                        .map(|t| t as u64),
-                    cache_hit: row.get::<i64, _>("cache_hit") != 0,
-                    cache_refresh: row.get::<i64, _>("cache_refresh") != 0,
-                    dnssec_status,
-                    upstream_server: row.get::<Option<String>, _>("upstream_server"),
-                    response_status,
-                    timestamp: Some(row.get("created_at")),
-                    query_source,
-                    group_id: row.get("group_id"),
-                })
-            })
-            .collect();
+        let entries: Vec<QueryLog> = rows.into_iter().filter_map(row_to_query_log).collect();
 
         debug!(
             count = entries.len(),
