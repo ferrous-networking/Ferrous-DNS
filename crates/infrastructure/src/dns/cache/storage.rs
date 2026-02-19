@@ -106,21 +106,22 @@ impl DnsCache {
 
     pub fn get(
         &self,
-        domain: &str,
+        domain: &Arc<str>,
         record_type: &RecordType,
     ) -> Option<(CachedData, Option<DnssecStatus>, Option<u32>)> {
-        let borrowed = BorrowedKey::new(domain, *record_type);
+        let borrowed = BorrowedKey::new(domain.as_ref(), *record_type);
         if !self.bloom.check(&borrowed) {
             self.metrics.misses.fetch_add(1, AtomicOrdering::Relaxed);
             return None;
         }
 
-        if let Some((arc_data, remaining_ttl)) = l1_get(domain, record_type) {
+        if let Some((arc_data, remaining_ttl)) = l1_get(domain.as_ref(), record_type) {
             self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
             return Some((CachedData::IpAddresses(arc_data), None, Some(remaining_ttl)));
         }
 
-        let key = CacheKey::new(domain, *record_type);
+        // Arc::clone is a single atomic refcount increment (~5 ns) — no string copy.
+        let key = CacheKey::new(Arc::clone(domain), *record_type);
         if let Some(entry) = self.cache.get(&key) {
             let record = entry.value();
 
@@ -133,7 +134,7 @@ impl DnsCache {
                 record.refreshing.swap(true, AtomicOrdering::Acquire);
                 self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
                 record.record_hit();
-                self.promote_to_l1(domain, record_type, record, now_secs);
+                self.promote_to_l1(domain.as_ref(), record_type, record, now_secs);
                 // Stale-but-usable: TTL already past, report 0 to the caller.
                 return Some((record.data.clone(), Some(record.dnssec_status), Some(0)));
             }
@@ -148,7 +149,7 @@ impl DnsCache {
             self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
             record.record_hit();
             let remaining_ttl = record.expires_at_secs.saturating_sub(now_secs) as u32;
-            self.promote_to_l1(domain, record_type, record, now_secs);
+            self.promote_to_l1(domain.as_ref(), record_type, record, now_secs);
             return Some((record.data.clone(), Some(record.dnssec_status), Some(remaining_ttl)));
         }
 
@@ -164,7 +165,7 @@ impl DnsCache {
         ttl: u32,
         dnssec_status: Option<DnssecStatus>,
     ) {
-        let key = CacheKey::new(domain, record_type);
+        let key = CacheKey::from_str(domain, record_type);
 
         // Size check before acquiring the entry lock to avoid deadlocking
         // with DashMap's internal shard locking in len().
@@ -207,7 +208,7 @@ impl DnsCache {
         data: CachedData,
         _dnssec_status: Option<DnssecStatus>,
     ) {
-        let key = CacheKey::new(domain, record_type);
+        let key = CacheKey::from_str(domain, record_type);
         self.bloom.set(&key);
 
         if self.cache.len() >= self.max_entries {
@@ -228,7 +229,7 @@ impl DnsCache {
     }
 
     pub fn remove(&self, domain: &str, record_type: &RecordType) -> bool {
-        let key = CacheKey::new(domain, *record_type);
+        let key = CacheKey::from_str(domain, *record_type);
 
         if self.cache.remove(&key).is_some() {
             self.metrics.evictions.fetch_add(1, AtomicOrdering::Relaxed);
@@ -257,12 +258,12 @@ impl DnsCache {
     }
 
     pub fn get_ttl(&self, domain: &str, record_type: &RecordType) -> Option<u32> {
-        let key = CacheKey::new(domain, *record_type);
+        let key = CacheKey::from_str(domain, *record_type);
         self.cache.get(&key).map(|entry| entry.ttl)
     }
 
     pub fn get_remaining_ttl(&self, domain: &str, record_type: &RecordType) -> Option<u32> {
-        let key = CacheKey::new(domain, *record_type);
+        let key = CacheKey::from_str(domain, *record_type);
         self.cache.get(&key).map(|entry| {
             entry.expires_at_secs.saturating_sub(coarse_now_secs()) as u32
         })

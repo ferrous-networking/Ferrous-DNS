@@ -77,7 +77,7 @@ impl CachedResolver {
         if resolution.addresses.is_empty() {
             let dynamic_ttl = self.negative_ttl_tracker.record_and_get_ttl(&query.domain);
             self.cache.insert(
-                &query.domain,
+                query.domain.as_ref(),
                 query.record_type,
                 CachedData::NegativeResponse,
                 dynamic_ttl,
@@ -93,7 +93,7 @@ impl CachedResolver {
             let ttl = resolution.min_ttl.unwrap_or(self.cache_ttl);
 
             self.cache.insert(
-                &query.domain,
+                query.domain.as_ref(),
                 query.record_type,
                 CachedData::IpAddresses(addresses),
                 ttl,
@@ -135,7 +135,7 @@ impl DnsResolver for CachedResolver {
             Err(e) => {
                 let dynamic_ttl = self.negative_ttl_tracker.record_and_get_ttl(&query.domain);
                 self.cache.insert(
-                    &query.domain,
+                    query.domain.as_ref(),
                     query.record_type,
                     CachedData::NegativeResponse,
                     dynamic_ttl,
