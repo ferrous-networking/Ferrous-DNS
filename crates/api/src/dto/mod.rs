@@ -13,9 +13,13 @@ pub mod rate;
 pub mod stats;
 pub mod timeline;
 pub mod whitelist;
+pub mod managed_domain;
 pub mod whitelist_source;
 
 pub use local_record::{CreateLocalRecordRequest, LocalRecordDto};
+pub use managed_domain::{
+    CreateManagedDomainRequest, ManagedDomainResponse, UpdateManagedDomainRequest,
+};
 
 pub use blocklist::BlocklistResponse;
 pub use blocklist_source::{

@@ -233,6 +233,35 @@ async fn fetch_sources_parallel(
     source_entries
 }
 
+struct ManagedDomainEntry {
+    domain: String,
+    action: String,
+    group_id: i64,
+}
+
+async fn load_managed_domains_for_index(
+    pool: &SqlitePool,
+) -> Result<Vec<ManagedDomainEntry>, DomainError> {
+    let rows = sqlx::query(
+        "SELECT domain, action, group_id FROM managed_domains WHERE enabled = 1",
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+    let entries: Vec<ManagedDomainEntry> = rows
+        .iter()
+        .map(|row| ManagedDomainEntry {
+            domain: row.get::<String, _>("domain").to_ascii_lowercase(),
+            action: row.get::<String, _>("action"),
+            group_id: row.get::<i64, _>("group_id"),
+        })
+        .collect();
+
+    info!(count = entries.len(), "Loaded managed domain entries");
+    Ok(entries)
+}
+
 async fn load_manual_domains(pool: &SqlitePool) -> Result<Vec<String>, DomainError> {
     let rows = sqlx::query("SELECT domain FROM blocklist")
         .fetch_all(pool)
@@ -348,6 +377,7 @@ pub async fn compile_block_index(
     let (_, group_masks) = build_group_masks(&sources, default_group_id);
     let source_entries = fetch_sources_parallel(url_tasks, client).await;
     let manual_domains = load_manual_domains(pool).await?;
+    let managed_domain_entries = load_managed_domains_for_index(pool).await?;
 
     let BlockIndexData {
         total_exact,
@@ -357,6 +387,16 @@ pub async fn compile_block_index(
         patterns,
     } = build_exact_and_wildcard(&manual_domains, &source_entries);
 
+    let mut managed_denies: HashMap<i64, DashSet<CompactString, FxBuildHasher>> = HashMap::new();
+    for entry in &managed_domain_entries {
+        if entry.action == "deny" {
+            managed_denies
+                .entry(entry.group_id)
+                .or_insert_with(|| DashSet::with_hasher(FxBuildHasher))
+                .insert(CompactString::new(&entry.domain));
+        }
+    }
+
     info!(
         exact = total_exact,
         wildcards = "built",
@@ -364,7 +404,8 @@ pub async fn compile_block_index(
         "Block index compiled"
     );
 
-    let allowlists = build_allowlist_index(pool, client, default_group_id).await?;
+    let allowlists =
+        build_allowlist_index(pool, client, default_group_id, &managed_domain_entries).await?;
 
     Ok(BlockIndex {
         sources,
@@ -376,6 +417,7 @@ pub async fn compile_block_index(
         wildcard,
         patterns,
         allowlists,
+        managed_denies,
     })
 }
 
@@ -423,6 +465,7 @@ async fn build_allowlist_index(
     pool: &SqlitePool,
     client: &reqwest::Client,
     _default_group_id: i64,
+    managed_entries: &[ManagedDomainEntry],
 ) -> Result<AllowlistIndex, DomainError> {
     let whitelist_rows = sqlx::query("SELECT domain FROM whitelist")
         .fetch_all(pool)
@@ -437,6 +480,16 @@ async fn build_allowlist_index(
         allowlists
             .global_exact
             .insert(CompactString::new(domain_lc));
+    }
+
+    for entry in managed_entries {
+        if entry.action == "allow" {
+            allowlists
+                .group_exact
+                .entry(entry.group_id)
+                .or_insert_with(|| DashSet::with_hasher(FxBuildHasher))
+                .insert(CompactString::new(&entry.domain));
+        }
     }
 
     let ws_rows = sqlx::query(

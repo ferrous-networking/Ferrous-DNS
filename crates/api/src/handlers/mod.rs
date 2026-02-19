@@ -16,6 +16,7 @@ pub mod rate;
 pub mod stats;
 pub mod timeline;
 pub mod whitelist;
+pub mod managed_domains;
 pub mod whitelist_sources;
 
 pub use blocklist::get_blocklist;
