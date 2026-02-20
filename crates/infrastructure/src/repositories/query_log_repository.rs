@@ -579,13 +579,12 @@ impl QueryLogRepository for SqliteQueryLogRepository {
 
         let row = sqlx::query(
             "SELECT
-                COUNT(*) as total_queries,
-                SUM(CASE WHEN cache_hit = 1 AND cache_refresh = 0 THEN 1 ELSE 0 END) as hits,
+                SUM(CASE WHEN query_source = 'client' THEN 1 ELSE 0 END) as total_queries,
+                SUM(CASE WHEN cache_hit = 1 AND cache_refresh = 0 AND query_source = 'client' THEN 1 ELSE 0 END) as hits,
                 SUM(CASE WHEN cache_refresh = 1 THEN 1 ELSE 0 END) as refreshes,
-                SUM(CASE WHEN cache_hit = 0 AND cache_refresh = 0 AND blocked = 0 THEN 1 ELSE 0 END) as misses
+                SUM(CASE WHEN cache_hit = 0 AND cache_refresh = 0 AND blocked = 0 AND query_source = 'client' THEN 1 ELSE 0 END) as misses
              FROM query_log
-             WHERE created_at >= datetime('now', '-' || ? || ' hours')
-               AND query_source = 'client'",
+             WHERE created_at >= datetime('now', '-' || ? || ' hours')",
         )
         .bind(period_hours)
         .fetch_one(&self.pool)
