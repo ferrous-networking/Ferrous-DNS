@@ -147,9 +147,17 @@ impl SignatureVerifier {
             ));
         }
 
+        // RFC 6605 §4: DNSSEC ECDSA P-256 keys are bare X||Y (64 bytes).
+        // ring requires uncompressed SEC1 form: 0x04 || X || Y (65 bytes).
+        let mut pk = Vec::with_capacity(65);
+        pk.push(0x04);
+        pk.extend_from_slice(&dnskey.public_key);
+
+        // RFC 6605 §4: DNSSEC ECDSA signatures are fixed-size R||S (64 bytes),
+        // not ASN.1 DER — use FIXED variant, not ASN1.
         let public_key = signature::UnparsedPublicKey::new(
-            &signature::ECDSA_P256_SHA256_ASN1,
-            &dnskey.public_key,
+            &signature::ECDSA_P256_SHA256_FIXED,
+            &pk,
         );
 
         match public_key.verify(data, signature) {
