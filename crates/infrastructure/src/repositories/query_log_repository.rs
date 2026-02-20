@@ -584,7 +584,8 @@ impl QueryLogRepository for SqliteQueryLogRepository {
                 SUM(CASE WHEN cache_refresh = 1 THEN 1 ELSE 0 END) as refreshes,
                 SUM(CASE WHEN cache_hit = 0 AND cache_refresh = 0 AND blocked = 0 THEN 1 ELSE 0 END) as misses
              FROM query_log
-             WHERE created_at >= datetime('now', '-' || ? || ' hours')",
+             WHERE created_at >= datetime('now', '-' || ? || ' hours')
+               AND query_source = 'client'",
         )
         .bind(period_hours)
         .fetch_one(&self.pool)
