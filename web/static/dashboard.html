@@ -267,9 +267,10 @@
                 await Promise.all([this.loadStats(), this.loadCacheMetrics()])
             },
             async loadChartsData() {
-                
                 if (!this.chartsReady) return;
-                await Promise.all([this.loadQueryTypes(), this.loadTimelineData()])
+                await Promise.all([this.loadQueryTypes(), this.loadTimelineData()]);
+                this.updateQueryTypesChart();
+                this.updateCacheSourceChart();
             },
             async loadStats() {
                 this._ctrl.stats?.abort();
@@ -282,9 +283,7 @@
                         // para o gráfico Query Types ser sempre preciso
                         if (this.stats.queries_by_type) {
                             this.queryTypes = {...this.stats.queries_by_type};
-                            if (this.chartsReady) this.updateQueryTypesChart();
                         }
-                        // Usar source_stats do servidor (dados completos das 24h)
                         if (this.stats.source_stats) {
                             const ss = this.stats.source_stats;
                             this.sourceStats = {
@@ -294,7 +293,6 @@
                                 managed_domain: ss.blocked_by_managed_domain || 0,
                                 regex_filter:   ss.blocked_by_regex_filter   || 0,
                             };
-                            if (this.chartsReady) this.updateCacheSourceChart();
                         }
                     }
                 } catch (e) {
