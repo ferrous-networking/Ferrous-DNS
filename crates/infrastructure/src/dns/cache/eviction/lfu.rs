@@ -58,7 +58,13 @@ mod tests {
         });
 
         coarse_clock::tick();
-        cache.insert("test.com", RecordType::A, make_ip_data("1.1.1.1"), 300, None);
+        cache.insert(
+            "test.com",
+            RecordType::A,
+            make_ip_data("1.1.1.1"),
+            300,
+            None,
+        );
 
         // 3 hits — abaixo do min_frequency=10
         for _ in 0..3 {
@@ -67,8 +73,8 @@ mod tests {
 
         // Verificar via policy direta que o score seria negativo
         // Criar um record temporário para teste
-        use crate::dns::cache::data::DnssecStatus;
         use crate::dns::cache::data::CachedData as CD;
+        use crate::dns::cache::data::DnssecStatus;
         let record = CachedRecord::new(
             CD::IpAddresses(Arc::new(vec!["1.1.1.1".parse::<IpAddr>().unwrap()])),
             300,
@@ -82,8 +88,16 @@ mod tests {
         }
 
         let score = policy.compute_score(&record, 0);
-        assert!(score < 0.0, "Score deve ser negativo quando hits ({}) < min_frequency (10)", 3);
-        assert_eq!(score, -(10.0 - 3.0), "Score deve ser -(min_frequency - hits)");
+        assert!(
+            score < 0.0,
+            "Score deve ser negativo quando hits ({}) < min_frequency (10)",
+            3
+        );
+        assert_eq!(
+            score,
+            -(10.0 - 3.0),
+            "Score deve ser -(min_frequency - hits)"
+        );
     }
 
     #[test]
@@ -104,7 +118,10 @@ mod tests {
         }
 
         let score = policy.compute_score(&record, 0);
-        assert!(score > 0.0, "Score deve ser positivo quando hits (15) >= min_frequency (5)");
+        assert!(
+            score > 0.0,
+            "Score deve ser positivo quando hits (15) >= min_frequency (5)"
+        );
         assert_eq!(score, 15.0);
     }
 
@@ -126,6 +143,9 @@ mod tests {
         }
 
         let score = policy.compute_score(&record, 0);
-        assert_eq!(score, 7.0, "Com min_frequency=0, score deve ser raw hit_count");
+        assert_eq!(
+            score, 7.0,
+            "Com min_frequency=0, score deve ser raw hit_count"
+        );
     }
 }

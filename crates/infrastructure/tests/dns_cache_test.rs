@@ -559,10 +559,34 @@ fn test_hit_rate_eviction_protects_high_hit_entries() {
         eviction_sample_size: 8,
     });
 
-    cache.insert("popular.com", RecordType::CNAME, make_cname_data("p"), 3600, None);
-    cache.insert("rare.com", RecordType::CNAME, make_cname_data("r"), 3600, None);
-    cache.insert("medium.com", RecordType::CNAME, make_cname_data("m"), 3600, None);
-    cache.insert("cold.com", RecordType::CNAME, make_cname_data("c"), 3600, None);
+    cache.insert(
+        "popular.com",
+        RecordType::CNAME,
+        make_cname_data("p"),
+        3600,
+        None,
+    );
+    cache.insert(
+        "rare.com",
+        RecordType::CNAME,
+        make_cname_data("r"),
+        3600,
+        None,
+    );
+    cache.insert(
+        "medium.com",
+        RecordType::CNAME,
+        make_cname_data("m"),
+        3600,
+        None,
+    );
+    cache.insert(
+        "cold.com",
+        RecordType::CNAME,
+        make_cname_data("c"),
+        3600,
+        None,
+    );
 
     // "popular.com" recebe muitos hits
     for _ in 0..10 {
@@ -570,12 +594,26 @@ fn test_hit_rate_eviction_protects_high_hit_entries() {
     }
 
     // Inserir mais entradas para forçar eviction
-    cache.insert("new1.com", RecordType::CNAME, make_cname_data("n1"), 3600, None);
-    cache.insert("new2.com", RecordType::CNAME, make_cname_data("n2"), 3600, None);
+    cache.insert(
+        "new1.com",
+        RecordType::CNAME,
+        make_cname_data("n1"),
+        3600,
+        None,
+    );
+    cache.insert(
+        "new2.com",
+        RecordType::CNAME,
+        make_cname_data("n2"),
+        3600,
+        None,
+    );
 
     // "popular.com" com alta taxa de hit deve sobreviver
     assert!(
-        cache.get(&Arc::from("popular.com"), &RecordType::CNAME).is_some(),
+        cache
+            .get(&Arc::from("popular.com"), &RecordType::CNAME)
+            .is_some(),
         "popular.com com muitos hits deve sobreviver à eviction HitRate"
     );
 }
@@ -599,24 +637,62 @@ fn test_lfu_negative_score_below_min_frequency_leads_to_eviction() {
     });
 
     // Entradas com poucos hits (abaixo do min_frequency=5) têm score negativo
-    cache.insert("low1.com", RecordType::CNAME, make_cname_data("l1"), 3600, None);
-    cache.insert("low2.com", RecordType::CNAME, make_cname_data("l2"), 3600, None);
+    cache.insert(
+        "low1.com",
+        RecordType::CNAME,
+        make_cname_data("l1"),
+        3600,
+        None,
+    );
+    cache.insert(
+        "low2.com",
+        RecordType::CNAME,
+        make_cname_data("l2"),
+        3600,
+        None,
+    );
 
     // Entrada com muitos hits (acima do min_frequency=5) tem score positivo
-    cache.insert("high.com", RecordType::CNAME, make_cname_data("h"), 3600, None);
+    cache.insert(
+        "high.com",
+        RecordType::CNAME,
+        make_cname_data("h"),
+        3600,
+        None,
+    );
     for _ in 0..10 {
         cache.get(&Arc::from("high.com"), &RecordType::CNAME);
     }
 
-    cache.insert("filler.com", RecordType::CNAME, make_cname_data("f"), 3600, None);
+    cache.insert(
+        "filler.com",
+        RecordType::CNAME,
+        make_cname_data("f"),
+        3600,
+        None,
+    );
 
     // Inserir acima do limite para forçar eviction
-    cache.insert("trigger.com", RecordType::CNAME, make_cname_data("t"), 3600, None);
-    cache.insert("trigger2.com", RecordType::CNAME, make_cname_data("t2"), 3600, None);
+    cache.insert(
+        "trigger.com",
+        RecordType::CNAME,
+        make_cname_data("t"),
+        3600,
+        None,
+    );
+    cache.insert(
+        "trigger2.com",
+        RecordType::CNAME,
+        make_cname_data("t2"),
+        3600,
+        None,
+    );
 
     // "high.com" com score positivo deve sobreviver
     assert!(
-        cache.get(&Arc::from("high.com"), &RecordType::CNAME).is_some(),
+        cache
+            .get(&Arc::from("high.com"), &RecordType::CNAME)
+            .is_some(),
         "high.com com hits acima de min_frequency deve sobreviver"
     );
 }

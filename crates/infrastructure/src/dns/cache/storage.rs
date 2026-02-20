@@ -403,9 +403,7 @@ impl DnsCache {
             sampled += 1;
         }
 
-        scored.sort_unstable_by(|a, b| {
-            a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
-        });
+        scored.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
         let mut total_evicted = 0usize;
         let mut last_worst_score = f64::MAX;

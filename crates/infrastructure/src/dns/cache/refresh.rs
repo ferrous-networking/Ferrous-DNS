@@ -133,7 +133,13 @@ mod tests {
         coarse_clock::tick();
 
         // TTL=2s → grace period = 2×TTL = 4s. Sleep 3s: expirada mas ainda stale-usable (age=3 < 4).
-        cache.insert("expired-window.test", RecordType::CNAME, make_cname("alias"), 2, None);
+        cache.insert(
+            "expired-window.test",
+            RecordType::CNAME,
+            make_cname("alias"),
+            2,
+            None,
+        );
         // Registrar hit para entrar na janela
         let _ = cache.get(&Arc::from("expired-window.test"), &RecordType::CNAME);
 
@@ -155,7 +161,13 @@ mod tests {
         let cache = make_cache_with_window(0); // janela = 0s
         coarse_clock::tick();
 
-        cache.insert("expired-no-window.test", RecordType::CNAME, make_cname("alias"), 1, None);
+        cache.insert(
+            "expired-no-window.test",
+            RecordType::CNAME,
+            make_cname("alias"),
+            1,
+            None,
+        );
         let _ = cache.get(&Arc::from("expired-no-window.test"), &RecordType::CNAME);
 
         std::thread::sleep(std::time::Duration::from_secs(2));
@@ -163,7 +175,9 @@ mod tests {
 
         let candidates = cache.get_refresh_candidates();
         assert!(
-            !candidates.iter().any(|(d, _)| d == "expired-no-window.test"),
+            !candidates
+                .iter()
+                .any(|(d, _)| d == "expired-no-window.test"),
             "Entrada expirada fora da janela não deve ser candidato. Candidatos: {:?}",
             candidates
         );
@@ -175,7 +189,13 @@ mod tests {
         let cache = make_cache_with_window(7200);
         coarse_clock::tick();
 
-        cache.insert("no-hits.test", RecordType::CNAME, make_cname("alias"), 3600, None);
+        cache.insert(
+            "no-hits.test",
+            RecordType::CNAME,
+            make_cname("alias"),
+            3600,
+            None,
+        );
         // Sem chamada a get() → hit_count = 0
 
         let candidates = cache.get_refresh_candidates();
@@ -192,7 +212,13 @@ mod tests {
         let cache = make_cache_with_window(7200);
         coarse_clock::tick();
 
-        cache.insert("valid-hit.test", RecordType::CNAME, make_cname("alias"), 3600, None);
+        cache.insert(
+            "valid-hit.test",
+            RecordType::CNAME,
+            make_cname("alias"),
+            3600,
+            None,
+        );
         // refresh_threshold=0.0, então qualquer entrada com hit é candidata
         let _ = cache.get(&Arc::from("valid-hit.test"), &RecordType::CNAME);
 
@@ -212,7 +238,13 @@ mod tests {
         let cache = make_cache_with_window(7200);
         coarse_clock::tick();
 
-        cache.insert("refreshing.test", RecordType::CNAME, make_cname("alias"), 3600, None);
+        cache.insert(
+            "refreshing.test",
+            RecordType::CNAME,
+            make_cname("alias"),
+            3600,
+            None,
+        );
         let _ = cache.get(&Arc::from("refreshing.test"), &RecordType::CNAME);
 
         // Simular que já está sendo refreshado
@@ -235,7 +267,13 @@ mod tests {
         let cache = make_cache_with_window(7200);
         coarse_clock::tick();
 
-        cache.insert("marked.test", RecordType::CNAME, make_cname("alias"), 1, None);
+        cache.insert(
+            "marked.test",
+            RecordType::CNAME,
+            make_cname("alias"),
+            1,
+            None,
+        );
         let _ = cache.get(&Arc::from("marked.test"), &RecordType::CNAME);
 
         std::thread::sleep(std::time::Duration::from_secs(2));

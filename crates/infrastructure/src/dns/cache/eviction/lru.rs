@@ -83,6 +83,9 @@ mod tests {
 
         assert!(cache.len() <= 3, "Cache deve respeitar max_entries");
         let metrics = cache.metrics();
-        assert!(metrics.evictions.load(std::sync::atomic::Ordering::Relaxed) > 0, "Deve ter ocorrido pelo menos uma eviction");
+        assert!(
+            metrics.evictions.load(std::sync::atomic::Ordering::Relaxed) > 0,
+            "Deve ter ocorrido pelo menos uma eviction"
+        );
     }
 }

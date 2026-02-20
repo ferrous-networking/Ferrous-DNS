@@ -123,7 +123,9 @@ async fn update_managed_domain(
         .await
     {
         Ok(domain) => Ok(Json(ManagedDomainResponse::from_domain(domain))),
-        Err(e @ DomainError::ManagedDomainNotFound(_)) => Err((StatusCode::NOT_FOUND, e.to_string())),
+        Err(e @ DomainError::ManagedDomainNotFound(_)) => {
+            Err((StatusCode::NOT_FOUND, e.to_string()))
+        }
         Err(DomainError::InvalidManagedDomain(msg)) => Err((StatusCode::CONFLICT, msg)),
         Err(e @ DomainError::GroupNotFound(_)) => Err((StatusCode::BAD_REQUEST, e.to_string())),
         Err(e) => {
@@ -139,7 +141,9 @@ async fn delete_managed_domain(
 ) -> Result<StatusCode, (StatusCode, String)> {
     match state.delete_managed_domain.execute(id).await {
         Ok(()) => Ok(StatusCode::NO_CONTENT),
-        Err(e @ DomainError::ManagedDomainNotFound(_)) => Err((StatusCode::NOT_FOUND, e.to_string())),
+        Err(e @ DomainError::ManagedDomainNotFound(_)) => {
+            Err((StatusCode::NOT_FOUND, e.to_string()))
+        }
         Err(e) => {
             error!(error = %e, "Failed to delete managed domain");
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))

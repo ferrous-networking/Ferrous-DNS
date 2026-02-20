@@ -105,7 +105,9 @@ async fn update_blocklist_source(
         .await
     {
         Ok(source) => Ok(Json(BlocklistSourceResponse::from_source(source))),
-        Err(e @ DomainError::BlocklistSourceNotFound(_)) => Err((StatusCode::NOT_FOUND, e.to_string())),
+        Err(e @ DomainError::BlocklistSourceNotFound(_)) => {
+            Err((StatusCode::NOT_FOUND, e.to_string()))
+        }
         Err(DomainError::InvalidBlocklistSource(msg)) => Err((StatusCode::CONFLICT, msg)),
         Err(e @ DomainError::GroupNotFound(_)) => Err((StatusCode::BAD_REQUEST, e.to_string())),
         Err(e) => {
@@ -121,7 +123,9 @@ async fn delete_blocklist_source(
 ) -> Result<StatusCode, (StatusCode, String)> {
     match state.delete_blocklist_source.execute(id).await {
         Ok(()) => Ok(StatusCode::NO_CONTENT),
-        Err(e @ DomainError::BlocklistSourceNotFound(_)) => Err((StatusCode::NOT_FOUND, e.to_string())),
+        Err(e @ DomainError::BlocklistSourceNotFound(_)) => {
+            Err((StatusCode::NOT_FOUND, e.to_string()))
+        }
         Err(e) => {
             error!(error = %e, "Failed to delete blocklist source");
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))

@@ -17,7 +17,6 @@ impl CacheKey {
             record_type,
         }
     }
-
 }
 
 impl Hash for CacheKey {

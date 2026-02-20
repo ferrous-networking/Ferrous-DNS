@@ -88,7 +88,13 @@ mod tests {
         let cache = make_cache(7200);
         coarse_clock::tick();
 
-        cache.insert("expired.test", RecordType::CNAME, make_cname("alias"), 1, None);
+        cache.insert(
+            "expired.test",
+            RecordType::CNAME,
+            make_cname("alias"),
+            1,
+            None,
+        );
 
         // Aguardar expiração e avançar o relógio coarse
         std::thread::sleep(std::time::Duration::from_secs(2));
@@ -96,7 +102,10 @@ mod tests {
 
         // A entrada está expirada mas NÃO marcada para deleção
         let removed = cache.compact();
-        assert_eq!(removed, 0, "compact() não deve remover entradas expiradas (apenas marked_for_deletion)");
+        assert_eq!(
+            removed, 0,
+            "compact() não deve remover entradas expiradas (apenas marked_for_deletion)"
+        );
         assert_eq!(cache.len(), 1, "Entrada expirada deve permanecer no cache");
     }
 
@@ -106,7 +115,13 @@ mod tests {
         let cache = make_cache(7200);
         coarse_clock::tick();
 
-        cache.insert("to-delete.test", RecordType::CNAME, make_cname("alias"), 1, None);
+        cache.insert(
+            "to-delete.test",
+            RecordType::CNAME,
+            make_cname("alias"),
+            1,
+            None,
+        );
 
         // Aguardar expiração
         std::thread::sleep(std::time::Duration::from_secs(2));
@@ -114,11 +129,17 @@ mod tests {
 
         // get() após expiração marca o record para deleção
         let result = cache.get(&Arc::from("to-delete.test"), &RecordType::CNAME);
-        assert!(result.is_none(), "get() deve retornar None para entrada expirada");
+        assert!(
+            result.is_none(),
+            "get() deve retornar None para entrada expirada"
+        );
 
         // Agora compact() deve removê-la
         let removed = cache.compact();
-        assert_eq!(removed, 1, "compact() deve remover entradas marked_for_deletion");
+        assert_eq!(
+            removed, 1,
+            "compact() deve remover entradas marked_for_deletion"
+        );
         assert_eq!(cache.len(), 0);
     }
 

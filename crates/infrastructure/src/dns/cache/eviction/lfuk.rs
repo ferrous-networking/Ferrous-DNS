@@ -26,8 +26,8 @@ impl EvictionPolicy for LfukPolicy {
         let age = record.inserted_at_secs as f64;
         let k_value = 0.5_f64;
 
-        let score = hits / (age.powf(k_value).max(1.0))
-            * (1.0 / (now_secs as f64 - access_time + 1.0));
+        let score =
+            hits / (age.powf(k_value).max(1.0)) * (1.0 / (now_secs as f64 - access_time + 1.0));
 
         if self.min_lfuk_score > 0.0 && score < self.min_lfuk_score {
             // Score negativo indica "abaixo do mínimo" — free-evict elegível
@@ -66,26 +66,41 @@ mod tests {
 
     #[test]
     fn test_lfuk_uses_access_history() {
-        let policy = LfukPolicy { min_lfuk_score: 0.0 };
-        assert!(policy.uses_access_history(), "LFUK deve usar access_history");
+        let policy = LfukPolicy {
+            min_lfuk_score: 0.0,
+        };
+        assert!(
+            policy.uses_access_history(),
+            "LFUK deve usar access_history"
+        );
     }
 
     #[test]
     fn test_lfuk_score_below_min_is_negative() {
-        let policy = LfukPolicy { min_lfuk_score: 1.5 };
+        let policy = LfukPolicy {
+            min_lfuk_score: 1.5,
+        };
         // Record com 0 hits → score ≈ 0 → score - 1.5 < 0
         let record = make_record_with_hits(0);
         let score = policy.compute_score(&record, 1_000_000);
-        assert!(score < 0.0, "Score deve ser negativo quando abaixo de min_lfuk_score");
+        assert!(
+            score < 0.0,
+            "Score deve ser negativo quando abaixo de min_lfuk_score"
+        );
     }
 
     #[test]
     fn test_lfuk_score_with_many_hits_and_recent_access() {
-        let policy = LfukPolicy { min_lfuk_score: 0.0 };
+        let policy = LfukPolicy {
+            min_lfuk_score: 0.0,
+        };
         let record = make_record_with_hits(20);
         // now_secs próximo de last_access → recência alta → score alto
         let now_secs = crate::dns::cache::coarse_clock::coarse_now_secs();
         let score = policy.compute_score(&record, now_secs);
-        assert!(score >= 0.0, "Entrada com muitos hits recentes deve ter score >= 0");
+        assert!(
+            score >= 0.0,
+            "Entrada com muitos hits recentes deve ter score >= 0"
+        );
     }
 }
