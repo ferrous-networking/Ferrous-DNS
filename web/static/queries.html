@@ -202,7 +202,20 @@
             <template x-for="query in paginatedQueries" :key="query.id||Math.random()">
                 <tr :class="query.blocked ? 'row-blocked' : 'row-allowed'">
                     <td style="font-size:12px" x-text="formatTime(query.timestamp)"></td>
-                    <td style="font-family:monospace;font-size:14px" x-text="query.domain"></td>
+                    <td style="font-family:monospace;font-size:14px">
+                        <div style="display:flex;align-items:center;gap:5px">
+                            <template x-if="query.dnssec_status === 'Secure'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" title="DNSSEC: Secure"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </template>
+                            <template x-if="query.dnssec_status === 'Insecure'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EAB308" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" title="DNSSEC: Insecure"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </template>
+                            <template x-if="query.dnssec_status === 'Bogus'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" title="DNSSEC: Bogus"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </template>
+                            <span x-text="query.domain"></span>
+                        </div>
+                    </td>
                     <td><span class="badge" style="background:rgba(59,130,246,0.1);color:#3B82F6"
                               x-text="query.type"></span></td>
                     <td style="font-size:13px" x-text="query.client"></td>
