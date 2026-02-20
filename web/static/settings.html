@@ -631,21 +631,13 @@
         <div class="card">
             <h2 style="font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text-primary)">Appearance</h2>
             <p style="font-size:13px;color:var(--text-secondary);margin-bottom:24px">Choose the color scheme for the web interface</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:480px">
-                <div @click="theme !== 'light' && toggleTheme()"
-                     :style="theme==='light' ? 'border:2px solid var(--color-primary)' : 'border:2px solid var(--border-color)'"
-                     style="padding:24px;border-radius:12px;cursor:pointer;text-align:center;transition:border-color 0.2s">
-                    <i data-lucide="sun" style="width:32px;height:32px;color:#F59E0B;margin-bottom:12px"></i>
-                    <p style="font-weight:600;color:var(--text-primary)">Light</p>
-                    <p x-show="theme==='light'" style="font-size:12px;color:var(--color-primary);margin-top:4px">Active</p>
-                </div>
-                <div @click="theme !== 'dark' && toggleTheme()"
-                     :style="theme==='dark' ? 'border:2px solid var(--color-primary)' : 'border:2px solid var(--border-color)'"
-                     style="padding:24px;border-radius:12px;cursor:pointer;text-align:center;transition:border-color 0.2s">
-                    <i data-lucide="moon" style="width:32px;height:32px;color:#6366F1;margin-bottom:12px"></i>
-                    <p style="font-weight:600;color:var(--text-primary)">Dark</p>
-                    <p x-show="theme==='dark'" style="font-size:12px;color:var(--color-primary);margin-top:4px">Active</p>
-                </div>
+            <div class="form-group" style="max-width:240px">
+                <label class="form-label">Theme</label>
+                <select x-model="theme"
+                        @change="localStorage.setItem('theme', theme); document.documentElement.classList.toggle('dark', theme === 'dark'); scheduleLucide()">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
             </div>
         </div>
     </div>
