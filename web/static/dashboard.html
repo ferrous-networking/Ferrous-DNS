@@ -452,10 +452,20 @@
                         }
                     } else if (appCharts.queryTypes && appCharts.queryTypes.data && appCharts.queryTypes.canvas && Object.keys(validTypes).length > 0) {
 
-                        appCharts.queryTypes.data.labels = Object.keys(validTypes);
-                        appCharts.queryTypes.data.datasets[0].data = Object.values(validTypes);
-                        appCharts.queryTypes.data.datasets[0].backgroundColor = Object.keys(validTypes).map(labelToColor);
-                        appCharts.queryTypes.update('none');
+                        const newLabels = Object.keys(validTypes);
+                        const newData   = Object.values(validTypes);
+                        const curLabels = appCharts.queryTypes.data.labels;
+                        const curData   = appCharts.queryTypes.data.datasets[0].data;
+                        const labelsChanged = newLabels.length !== curLabels.length ||
+                            newLabels.some((l, i) => l !== curLabels[i]);
+                        const dataChanged = newData.length !== curData.length ||
+                            newData.some((v, i) => v !== curData[i]);
+                        if (labelsChanged || dataChanged) {
+                            appCharts.queryTypes.data.labels = newLabels;
+                            appCharts.queryTypes.data.datasets[0].data = newData;
+                            appCharts.queryTypes.data.datasets[0].backgroundColor = newLabels.map(labelToColor);
+                            appCharts.queryTypes.update('none');
+                        }
                     }
                 } catch (e) {
                     console.error('Error updating query types chart:', e);
@@ -507,10 +517,18 @@
                             });
                         }
                     } else if (appCharts.cacheSource.data && appCharts.cacheSource.canvas) {
-                        appCharts.cacheSource.data.labels = labels;
-                        appCharts.cacheSource.data.datasets[0].data = data;
-                        appCharts.cacheSource.data.datasets[0].backgroundColor = colors;
-                        appCharts.cacheSource.update('none');
+                        const curLabels = appCharts.cacheSource.data.labels;
+                        const curData   = appCharts.cacheSource.data.datasets[0].data;
+                        const labelsChanged = labels.length !== curLabels.length ||
+                            labels.some((l, i) => l !== curLabels[i]);
+                        const dataChanged = data.length !== curData.length ||
+                            data.some((v, i) => v !== curData[i]);
+                        if (labelsChanged || dataChanged) {
+                            appCharts.cacheSource.data.labels = labels;
+                            appCharts.cacheSource.data.datasets[0].data = data;
+                            appCharts.cacheSource.data.datasets[0].backgroundColor = colors;
+                            appCharts.cacheSource.update('none');
+                        }
                     }
                 } catch (e) {
                     console.error('Error updating cache source chart:', e);
