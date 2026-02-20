@@ -5,10 +5,12 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use tracing::debug;
 
+// No client-level timeout: each call site wraps its futures with
+// tokio::time::timeout(query_timeout, ...), so the configured timeout
+// is always respected without a redundant hard-coded cap here.
 static SHARED_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
     reqwest::Client::builder()
         .use_rustls_tls()
-        .timeout(Duration::from_secs(10))
         .pool_max_idle_per_host(4)
         .http2_prior_knowledge()
         .build()
