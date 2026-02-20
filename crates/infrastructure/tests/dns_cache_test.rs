@@ -325,9 +325,7 @@ fn test_refresh_candidates_with_recent_access() {
 
     let candidates = cache.get_refresh_candidates();
     assert!(
-        candidates
-            .iter()
-            .any(|(d, _)| d == "popular.com"),
+        candidates.iter().any(|(d, _)| d == "popular.com"),
         "Entrada com hit deve ser candidata; candidates={:?}",
         candidates
     );
@@ -362,7 +360,13 @@ fn test_refresh_record_updates_ttl_fields() {
     // refresh_record() deve atualizar o TTL e tornar a entrada acessível.
     let cache = create_refresh_cache(u64::MAX);
 
-    cache.insert("renew.com", RecordType::A, make_ip_data("9.9.9.9"), 300, None);
+    cache.insert(
+        "renew.com",
+        RecordType::A,
+        make_ip_data("9.9.9.9"),
+        300,
+        None,
+    );
 
     // Verificar TTL original
     assert_eq!(cache.get_ttl("renew.com", &RecordType::A), Some(300));
@@ -375,7 +379,10 @@ fn test_refresh_record_updates_ttl_fields() {
         make_ip_data("9.9.9.9"),
         None,
     );
-    assert!(renewed, "refresh_record deve retornar true quando a entrada existe");
+    assert!(
+        renewed,
+        "refresh_record deve retornar true quando a entrada existe"
+    );
 
     // TTL atualizado
     assert_eq!(
@@ -401,7 +408,13 @@ fn test_refresh_record_preserves_hit_count_for_subsequent_candidates() {
     let cache = create_refresh_cache(u64::MAX);
 
     // Usa CNAME para evitar L1: cache.get() vai para L2 e chama record_hit()
-    cache.insert("keep-alive.com", RecordType::CNAME, make_cname_data("alias.keep-alive.com"), 300, None);
+    cache.insert(
+        "keep-alive.com",
+        RecordType::CNAME,
+        make_cname_data("alias.keep-alive.com"),
+        300,
+        None,
+    );
     cache.get(&Arc::from("keep-alive.com"), &RecordType::CNAME); // hit_count = 1
 
     // Antes do refresh: deve ser candidata
@@ -443,7 +456,10 @@ fn test_refresh_record_returns_false_for_missing_entry() {
         None,
     );
 
-    assert!(!result, "refresh_record deve retornar false para entrada inexistente");
+    assert!(
+        !result,
+        "refresh_record deve retornar false para entrada inexistente"
+    );
 }
 
 #[test]
