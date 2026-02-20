@@ -149,8 +149,31 @@ impl ChainVerifier {
         let ds_records = self.query_ds(child_domain).await?;
 
         if ds_records.is_empty() {
-            debug!(domain = %child_domain, "No DS records found (insecure delegation)");
-            return Err(DomainError::InsecureDelegation);
+            // No DS in the parent zone.  This could mean:
+            //   (a) an unsigned zone delegation (NS exists, no DS) → Insecure
+            //   (b) a hostname inside the parent zone (no zone cut at all) → chain stops here as Secure
+            //
+            // Distinguish by querying DNSKEY at child_domain: a real zone (even
+            // unsigned) will have DNSKEY records; a plain hostname will not.
+            let has_dnskey = match self.query_dnskey(child_domain).await {
+                Ok(r) => !r.keys.is_empty(),
+                Err(_) => false,
+            };
+
+            if has_dnskey {
+                // Zone exists but the parent published no DS → unsigned delegation.
+                debug!(domain = %child_domain, "No DS records found (insecure delegation)");
+                return Err(DomainError::InsecureDelegation);
+            } else {
+                // No DNSKEY either: child_domain is a hostname inside the parent
+                // zone, not a zone cut.  Stop the chain here — phase 2 will verify
+                // the final RRset RRSIG against the parent zone's ZSK.
+                debug!(
+                    domain = %child_domain,
+                    "No DS and no DNSKEY — hostname inside parent zone, chain stops here"
+                );
+                return Ok(());
+            }
         }
 
         // 2. Query DNSKEY records (also extracts RRSIGs from same response)
