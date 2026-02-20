@@ -285,11 +285,30 @@ impl DnssecValidator {
                 debug!(zone = %zone, "No trusted keys for signer zone");
                 continue;
             };
+
+            // Determine the actual owner name of the signed RRset.
+            // For CNAME chains the A/AAAA records belong to the CNAME target, not
+            // the original query domain.  TBS::from_input filters by owner name, so
+            // passing the wrong name produces an empty RRset and a failed verification.
+            let hickory_type = RecordTypeMapper::to_hickory(&rrsig.type_covered);
+            let owner = data_records
+                .iter()
+                .find(|r| r.record_type() == hickory_type)
+                .map(|r| r.name().to_string())
+                .unwrap_or_else(|| {
+                    if domain.ends_with('.') {
+                        domain.to_string()
+                    } else {
+                        format!("{}.", domain)
+                    }
+                });
+
             for key in zone_keys {
-                match crypto_verifier.verify_rrsig(rrsig, key, domain, &data_records) {
+                match crypto_verifier.verify_rrsig(rrsig, key, &owner, &data_records) {
                     Ok(true) => {
                         debug!(
                             domain = %domain,
+                            owner = %owner,
                             key_tag = key.calculate_key_tag(),
                             "RRset RRSIG verified"
                         );
