@@ -1,5 +1,4 @@
 pub mod active;
-pub mod entry;
 pub mod hit_rate;
 pub mod lfu;
 pub mod lfuk;
