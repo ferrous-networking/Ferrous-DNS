@@ -304,6 +304,7 @@ impl QueryLogRepository for SqliteQueryLogRepository {
                     datetime(created_at) as created_at
              FROM query_log
              WHERE created_at >= datetime('now', '-' || ? || ' hours')
+               AND query_source = 'client'
              ORDER BY created_at DESC
              LIMIT ?",
         )
@@ -338,7 +339,8 @@ impl QueryLogRepository for SqliteQueryLogRepository {
 
         let count_row = sqlx::query(
             "SELECT COUNT(*) as total FROM query_log
-             WHERE created_at >= datetime('now', '-' || ? || ' hours')",
+             WHERE created_at >= datetime('now', '-' || ? || ' hours')
+               AND query_source = 'client'",
         )
         .bind(period_hours)
         .fetch_one(&self.pool)
@@ -355,6 +357,7 @@ impl QueryLogRepository for SqliteQueryLogRepository {
                     datetime(created_at) as created_at
              FROM query_log
              WHERE created_at >= datetime('now', '-' || ? || ' hours')
+               AND query_source = 'client'
              ORDER BY created_at DESC
              LIMIT ? OFFSET ?",
         )
@@ -396,7 +399,8 @@ impl QueryLogRepository for SqliteQueryLogRepository {
                 AVG(CASE WHEN cache_hit = 0 AND blocked = 0 THEN response_time_ms END) as avg_upstream_time
              FROM query_log
              WHERE response_time_ms IS NOT NULL
-               AND created_at >= datetime('now', '-' || ? || ' hours')",
+               AND created_at >= datetime('now', '-' || ? || ' hours')
+               AND query_source = 'client'",
         )
         .bind(period_hours)
         .fetch_one(&self.pool)
@@ -418,6 +422,7 @@ impl QueryLogRepository for SqliteQueryLogRepository {
             "SELECT record_type, COUNT(*) as count
              FROM query_log
              WHERE created_at >= datetime('now', '-' || ? || ' hours')
+               AND query_source = 'client'
              GROUP BY record_type",
         )
         .bind(period_hours)
@@ -498,6 +503,7 @@ impl QueryLogRepository for SqliteQueryLogRepository {
                 SUM(CASE WHEN blocked = 0 THEN 1 ELSE 0 END) as unblocked
              FROM query_log
              WHERE created_at >= datetime('now', '-' || ? || ' hours')
+               AND query_source = 'client'
              GROUP BY time_bucket
              ORDER BY time_bucket ASC",
             time_bucket_expr
