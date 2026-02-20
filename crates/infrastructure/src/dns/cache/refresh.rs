@@ -49,17 +49,11 @@ impl DnsCache {
             let within_window = hit_count > 0 && age_since_access <= self.access_window_secs;
 
             if !within_window {
-                // Fora da janela: sem refresh proativo.
-                // O próximo acesso atualiza last_access → re-entra na janela.
                 continue;
             }
 
             if record.is_expired_at_secs(now) {
-                // Expirada + dentro da janela → candidato URGENTE.
-                // TTL passou mas ainda está no grace period 2×TTL (is_stale_usable).
-                // O ciclo de refresh irá renová-la antes da próxima compaction.
                 if record.is_stale_usable_at_secs(now) {
-                    // Claim atômico: garante que apenas um ciclo agenda o refresh.
                     if record
                         .refreshing
                         .compare_exchange(
@@ -76,12 +70,10 @@ impl DnsCache {
                 continue;
             }
 
-            // Válida + dentro da janela: candidato normal pelo threshold de refresh
             if !record.should_refresh(self.refresh_threshold) {
                 continue;
             }
 
-            // Claim atômico: garante que apenas um ciclo agenda o refresh.
             if record
                 .refreshing
                 .compare_exchange(

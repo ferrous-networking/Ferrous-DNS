@@ -10,8 +10,6 @@ impl DnsCache {
     /// urgente quando dentro da `access_window`. Isso permite que entradas
     /// populares expiradas sobrevivam até serem renovadas ou removidas por score baixo.
     pub fn compact(&self) -> usize {
-        // Phase 1: collect marked keys under short-held per-shard read locks.
-        // Concurrent readers are not blocked during this phase.
         let to_remove: Vec<super::key::CacheKey> = self
             .cache
             .iter()
@@ -21,8 +19,6 @@ impl DnsCache {
 
         let removed = to_remove.len();
 
-        // Phase 2: remove with brief per-shard write locks (one per entry).
-        // Avoids holding a write lock across the entire map as retain() would.
         for key in to_remove {
             self.cache.remove(&key);
         }

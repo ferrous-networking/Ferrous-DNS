@@ -22,9 +22,6 @@ pub struct DnsCacheConfig {
     pub min_lfuk_score: f64,
     pub shard_amount: usize,
     pub access_window_secs: u64,
-    /// Number of entries sampled per eviction slot in evict_by_strategy().
-    /// Higher values increase eviction quality at the cost of more iteration.
-    /// Default: 8.
     pub eviction_sample_size: usize,
 }
 
@@ -110,8 +107,6 @@ impl DnsCache {
         domain: &Arc<str>,
         record_type: &RecordType,
     ) -> Option<(CachedData, Option<DnssecStatus>, Option<u32>)> {
-        // L1 (thread-local, ~50 cycles) before bloom (5 hashes + 5 atomic loads, ~25 ns).
-        // On hot-path cache hits, this avoids bloom computation entirely.
         if let Some((arc_data, remaining_ttl)) = l1_get(domain.as_ref(), record_type) {
             self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
             return Some((CachedData::IpAddresses(arc_data), None, Some(remaining_ttl)));
@@ -170,11 +165,6 @@ impl DnsCache {
     ) {
         let key = CacheKey::new(domain, record_type);
 
-        // NOTE: len() check is not atomic with the subsequent insert.
-        // Under high concurrency the cache may transiently exceed max_entries
-        // by up to (num_concurrent_writers × batch_eviction_percentage) entries.
-        // This overshoot is bounded and self-corrected on the next insertion.
-        // Intentional trade-off: avoiding a global lock preserves throughput.
         if self.cache.len() >= self.max_entries {
             self.evict_entries();
         }
@@ -308,7 +298,6 @@ impl DnsCache {
                 .refreshing
                 .store(false, std::sync::atomic::Ordering::Relaxed);
 
-            // Extract Arc before moving new_data so we only increment the refcount once.
             let maybe_addresses = if let CachedData::IpAddresses(ref addr) = new_data {
                 Some(Arc::clone(addr))
             } else {
@@ -372,8 +361,6 @@ impl DnsCache {
         let now_secs = coarse_now_secs();
         let total_to_sample = count * self.eviction_sample_size;
 
-        // Single scan: collect urgent (expired + low-score) and scored entries.
-        // Avoids N separate DashMap iterator allocations for N evictions.
         let mut urgent_expired: Vec<CacheKey> = Vec::new();
         let mut scored: Vec<(CacheKey, f64)> = Vec::new();
         let mut sampled = 0usize;
@@ -388,11 +375,6 @@ impl DnsCache {
             }
 
             if record.is_expired_at_secs(now_secs) {
-                // Expired entries inside the access window are candidates for urgent
-                // refresh (handled by the refresh cycle) — score them normally so
-                // they are not evicted before being renewed.
-                // Expired entries outside the window with a negative score are
-                // evicted immediately without consuming a scored slot.
                 let hit_count = record.hit_count.load(AtomicOrdering::Relaxed);
                 let last_access = record.last_access.load(AtomicOrdering::Relaxed);
                 let within_window = hit_count > 0
@@ -412,9 +394,7 @@ impl DnsCache {
             scored.push((entry.key().clone(), score));
             sampled += 1;
         }
-        // Iterator released — safe to acquire write locks below.
 
-        // Sort ascending: lowest score (worst candidate) first.
         scored.sort_unstable_by(|a, b| {
             a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
         });
