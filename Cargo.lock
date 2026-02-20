@@ -720,6 +720,7 @@ dependencies = [
  "ring",
  "rustc-hash",
  "rustls",
+ "sha1",
  "sha2",
  "smallvec",
  "socket2",
