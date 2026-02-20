@@ -272,7 +272,15 @@
                 this._ctrl.stats = new AbortController();
                 try {
                     const res = await fetch('/api/stats?period=24h', {signal: this._ctrl.stats.signal});
-                    if (res.ok) this.stats = await res.json()
+                    if (res.ok) {
+                        this.stats = await res.json();
+                        // Usar queries_by_type do servidor (sem limite de 500 queries)
+                        // para o gráfico Query Types ser sempre preciso
+                        if (this.stats.queries_by_type) {
+                            this.queryTypes = {...this.stats.queries_by_type};
+                            if (this.chartsReady) this.updateQueryTypesChart();
+                        }
+                    }
                 } catch (e) {
                     if (e.name !== 'AbortError') console.error(e)
                 }
@@ -302,10 +310,16 @@
                         const result = await res.json();
                         const queries = result.data || result;
 
-                        this.queryTypes = {};
-                        queries.forEach(q => {
-                            this.queryTypes[q.type] = (this.queryTypes[q.type] || 0) + 1;
-                        });
+                        // Query Types: usa dados do servidor via loadStats() (sem limite).
+                        // Fallback para contagem local só se stats ainda não carregou.
+                        if (!this.stats.queries_by_type || Object.keys(this.stats.queries_by_type).length === 0) {
+                            this.queryTypes = {};
+                            queries.forEach(q => {
+                                this.queryTypes[q.type] = (this.queryTypes[q.type] || 0) + 1;
+                            });
+                        }
+
+                        // Query Source: ainda usa as queries raw (não disponível em /api/stats)
                         const src = {cache: 0, upstream: 0, blocklist: 0, managed_domain: 0, regex_filter: 0};
                         queries.forEach(q => {
                             if (q.cache_hit) {
@@ -322,7 +336,6 @@
                         this.sourceStats = src;
                         this.updateQueryTypesChart();
                         this.updateCacheSourceChart();
-
                     }
                 } catch (e) {
                     console.error(e)
