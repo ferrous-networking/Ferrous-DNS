@@ -57,6 +57,7 @@ impl CachedResolver {
                         cname: None,
                         upstream_server: None,
                         min_ttl: remaining_ttl,
+                        authority_records: vec![],
                     },
                     CachedData::CanonicalName(_) => DnsResolution {
                         addresses: Arc::new(vec![]),
@@ -65,6 +66,7 @@ impl CachedResolver {
                         cname: None,
                         upstream_server: None,
                         min_ttl: remaining_ttl,
+                        authority_records: vec![],
                     },
                     CachedData::NegativeResponse => DnsResolution {
                         addresses: Arc::new(vec![]),
@@ -73,6 +75,7 @@ impl CachedResolver {
                         cname: None,
                         upstream_server: None,
                         min_ttl: remaining_ttl,
+                        authority_records: vec![],
                     },
                 }
             },

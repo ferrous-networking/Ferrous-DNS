@@ -677,6 +677,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "ferrous-dns-domain",
+ "hickory-proto",
  "ipnetwork",
  "lru",
  "tokio",

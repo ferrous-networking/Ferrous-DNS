@@ -1133,6 +1133,7 @@ impl DnsResolutionBuilder {
             cname: self.cname,
             upstream_server: self.upstream_server,
             min_ttl: None,
+            authority_records: vec![],
         }
     }
 }
