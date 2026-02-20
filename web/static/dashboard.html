@@ -256,7 +256,11 @@
                 scheduleLucide()
             },
             async loadAllData() {
-                await Promise.all([this.loadStats(), this.loadQueryRate(), this.loadQueryTypes(), this.loadCacheMetrics(), this.loadBlockFilterStats()])
+                // loadQueryTypes is NOT included here to avoid a race condition with loadStats():
+                // if loadQueryTypes finishes first, it falls back to the 500-query sample
+                // before loadStats has populated stats.queries_by_type, causing size instability.
+                // loadStats already updates both queryTypes and sourceStats charts directly.
+                await Promise.all([this.loadStats(), this.loadQueryRate(), this.loadCacheMetrics(), this.loadBlockFilterStats()])
             },
             async loadQuickStats() {
                 
@@ -645,7 +649,7 @@
                                 labels: Object.keys(this.queryTypes),
                                 datasets: [{
                                     data: Object.values(this.queryTypes),
-                                    backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#A855F7']
+                                    backgroundColor: Object.keys(this.queryTypes).map(labelToColor)
                                 }]
                             },
                             options: {
@@ -657,11 +661,11 @@
                         })
                     }
                     const SOURCE_DEF_INIT = [
-                        {key: 'cache',          label: '⚡ Cache',          color: '#A855F7'},
-                        {key: 'upstream',       label: '🌐 Upstream',       color: '#3B82F6'},
-                        {key: 'blocklist',      label: '🚫 Blocklist',      color: '#EF4444'},
-                        {key: 'managed_domain', label: '🔶 Managed Domain', color: '#F97316'},
-                        {key: 'regex_filter',   label: '🔵 Regex Filter',   color: '#8B5CF6'},
+                        {key: 'cache',          label: '⚡ Cache'},
+                        {key: 'upstream',       label: '🌐 Upstream'},
+                        {key: 'blocklist',      label: '🚫 Blocklist'},
+                        {key: 'managed_domain', label: '🔶 Managed Domain'},
+                        {key: 'regex_filter',   label: '🔵 Regex Filter'},
                     ];
                     const ctx3 = document.getElementById('cacheSourceChart');
                     const activeInit = SOURCE_DEF_INIT.filter(e => (this.sourceStats[e.key] || 0) > 0);
@@ -672,7 +676,7 @@
                                 labels: activeInit.map(e => e.label),
                                 datasets: [{
                                     data: activeInit.map(e => this.sourceStats[e.key]),
-                                    backgroundColor: activeInit.map(e => e.color)
+                                    backgroundColor: activeInit.map(e => labelToColor(e.label))
                                 }]
                             },
                             options: {
