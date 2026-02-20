@@ -18,6 +18,7 @@ fn create_refresh_cache(access_window_secs: u64) -> DnsCache {
         min_lfuk_score: 0.0,
         shard_amount: 4,
         access_window_secs,
+        eviction_sample_size: 8,
     })
 }
 
@@ -49,6 +50,7 @@ fn create_cache(
         min_lfuk_score,
         shard_amount: 4,
         access_window_secs: 7200,
+        eviction_sample_size: 8,
     })
 }
 
@@ -510,6 +512,7 @@ fn test_lru_eviction_protects_recently_accessed_entry() {
         min_lfuk_score: 0.0,
         shard_amount: 4,
         access_window_secs: 7200,
+        eviction_sample_size: 8,
     });
 
     // Inserir 3 entradas no tick T: last_access = T para todas
@@ -553,6 +556,7 @@ fn test_hit_rate_eviction_protects_high_hit_entries() {
         min_lfuk_score: 0.0,
         shard_amount: 4,
         access_window_secs: 7200,
+        eviction_sample_size: 8,
     });
 
     cache.insert("popular.com", RecordType::CNAME, make_cname_data("p"), 3600, None);
@@ -591,6 +595,7 @@ fn test_lfu_negative_score_below_min_frequency_leads_to_eviction() {
         min_lfuk_score: 0.0,
         shard_amount: 4,
         access_window_secs: 7200,
+        eviction_sample_size: 8,
     });
 
     // Entradas com poucos hits (abaixo do min_frequency=5) têm score negativo
@@ -636,6 +641,7 @@ fn test_access_window_preserved_in_refactored_cache() {
             min_lfuk_score: 0.0,
             shard_amount: 4,
             access_window_secs: 1800,
+            eviction_sample_size: 8,
         });
 
         assert_eq!(
@@ -667,6 +673,7 @@ fn test_single_scan_evicts_exact_count() {
         min_lfuk_score: 0.0,
         shard_amount: 4,
         access_window_secs: 7200,
+        eviction_sample_size: 8,
     });
 
     // Inserir max_entries entradas

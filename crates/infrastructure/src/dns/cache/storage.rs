@@ -22,6 +22,10 @@ pub struct DnsCacheConfig {
     pub min_lfuk_score: f64,
     pub shard_amount: usize,
     pub access_window_secs: u64,
+    /// Number of entries sampled per eviction slot in evict_by_strategy().
+    /// Higher values increase eviction quality at the cost of more iteration.
+    /// Default: 8.
+    pub eviction_sample_size: usize,
 }
 
 pub struct DnsCache {
@@ -39,6 +43,7 @@ pub struct DnsCache {
     pub(super) use_probabilistic_eviction: bool,
     pub(super) bloom: Arc<AtomicBloom>,
     pub(super) access_window_secs: u64,
+    pub(super) eviction_sample_size: usize,
 }
 
 impl DnsCache {
@@ -78,6 +83,7 @@ impl DnsCache {
             use_probabilistic_eviction: true,
             bloom: Arc::new(bloom),
             access_window_secs: config.access_window_secs,
+            eviction_sample_size: config.eviction_sample_size.max(1),
         }
     }
 
@@ -354,14 +360,12 @@ impl DnsCache {
     }
 
     fn evict_by_strategy(&self, count: usize) {
-        const EVICTION_SAMPLE_SIZE: usize = 8;
-
         if self.cache.is_empty() {
             return;
         }
 
         let now_secs = coarse_now_secs();
-        let total_to_sample = count * EVICTION_SAMPLE_SIZE;
+        let total_to_sample = count * self.eviction_sample_size;
 
         // Single scan: collect urgent (expired + low-score) and scored entries.
         // Avoids N separate DashMap iterator allocations for N evictions.
