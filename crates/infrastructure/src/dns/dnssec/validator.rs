@@ -143,9 +143,20 @@ impl DnssecValidator {
             "DNS query completed"
         );
 
+        // Extract the signer zone from the upstream RRSIG, if any.
+        // A hostname record (e.g. media.viudescloud.uk) is signed by its parent zone's ZSK;
+        // the RRSIG carries signer_name = "viudescloud.uk.".  By validating the chain to
+        // that zone instead of the full hostname, we never ask for DS at a hostname label
+        // (which would be absent and wrongly return Insecure).
+        // For unsigned domains the answer has no RRSIG, so we fall back to the raw domain;
+        // a DS query for it returns empty → InsecureDelegation → Insecure, as expected.
+        let chain_domain =
+            Self::extract_signer_zone(upstream_result.response.message.answers())
+                .unwrap_or_else(|| domain.to_owned());
+
         let mut validation_status = self
             .chain_verifier
-            .verify_chain(domain, record_type)
+            .verify_chain(&chain_domain, record_type)
             .await?;
 
         // Phase 2: verify RRSIG over the final RRset using ZSKs from the validated chain.
@@ -214,6 +225,20 @@ impl DnssecValidator {
             timeout_ms: self.timeout_ms,
             trust_anchors_count: 1,
         }
+    }
+
+    /// Extract the signer zone name from the first non-DNSKEY RRSIG in an answer section.
+    /// Returns `None` when no RRSIG is present (unsigned domain).
+    fn extract_signer_zone(answers: &[Record]) -> Option<String> {
+        for record in answers {
+            if let RData::DNSSEC(DNSSECRData::RRSIG(rrsig)) = record.data() {
+                let input = rrsig.input();
+                if input.type_covered != hickory_proto::rr::RecordType::DNSKEY {
+                    return Some(input.signer_name.to_string());
+                }
+            }
+        }
+        None
     }
 
     fn verify_rrset_signatures(&self, domain: &str, all_answers: &[Record]) -> ValidationResult {
