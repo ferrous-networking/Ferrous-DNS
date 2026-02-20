@@ -1,5 +1,6 @@
 use super::coarse_clock::coarse_now_secs;
 use super::storage::DnsCache;
+use compact_str::CompactString;
 use ferrous_dns_domain::RecordType;
 use std::sync::atomic::Ordering as AtomicOrdering;
 
@@ -20,7 +21,7 @@ impl DnsCache {
     ///
     /// Entradas **fora da janela** não recebem refresh proativo. O próximo acesso
     /// atualiza `last_access` via `record_hit()`, re-inserindo-as na janela.
-    pub fn get_refresh_candidates(&self) -> Vec<(String, RecordType)> {
+    pub fn get_refresh_candidates(&self) -> Vec<(CompactString, RecordType)> {
         let mut candidates = Vec::new();
         let now = coarse_now_secs();
 
@@ -54,11 +55,23 @@ impl DnsCache {
             }
 
             if record.is_expired_at_secs(now) {
-                // Fix 2: Expirada + dentro da janela → candidato URGENTE.
+                // Expirada + dentro da janela → candidato URGENTE.
                 // TTL passou mas ainda está no grace period 2×TTL (is_stale_usable).
                 // O ciclo de refresh irá renová-la antes da próxima compaction.
                 if record.is_stale_usable_at_secs(now) {
-                    candidates.push((key.domain.to_string(), key.record_type));
+                    // Claim atômico: garante que apenas um ciclo agenda o refresh.
+                    if record
+                        .refreshing
+                        .compare_exchange(
+                            false,
+                            true,
+                            AtomicOrdering::Acquire,
+                            AtomicOrdering::Relaxed,
+                        )
+                        .is_ok()
+                    {
+                        candidates.push((key.domain.clone(), key.record_type));
+                    }
                 }
                 continue;
             }
@@ -68,7 +81,19 @@ impl DnsCache {
                 continue;
             }
 
-            candidates.push((key.domain.to_string(), key.record_type));
+            // Claim atômico: garante que apenas um ciclo agenda o refresh.
+            if record
+                .refreshing
+                .compare_exchange(
+                    false,
+                    true,
+                    AtomicOrdering::Acquire,
+                    AtomicOrdering::Relaxed,
+                )
+                .is_ok()
+            {
+                candidates.push((key.domain.clone(), key.record_type));
+            }
         }
 
         candidates
@@ -183,6 +208,31 @@ mod tests {
         assert!(
             candidates.iter().any(|(d, _)| d == "valid-hit.test"),
             "Entrada válida com hit dentro da janela deve ser candidata. Candidatos: {:?}",
+            candidates
+        );
+    }
+
+    /// Entradas com refreshing=true não são retornadas como candidatos (compare_exchange).
+    #[test]
+    fn test_refresh_skips_already_refreshing_entries() {
+        use std::sync::atomic::Ordering;
+
+        let cache = make_cache_with_window(7200);
+        coarse_clock::tick();
+
+        cache.insert("refreshing.test", RecordType::CNAME, make_cname("alias"), 3600, None);
+        let _ = cache.get(&Arc::from("refreshing.test"), &RecordType::CNAME);
+
+        // Simular que já está sendo refreshado
+        let key = crate::dns::cache::key::CacheKey::new("refreshing.test", RecordType::CNAME);
+        if let Some(entry) = cache.cache.get(&key) {
+            entry.refreshing.store(true, Ordering::Relaxed);
+        }
+
+        let candidates = cache.get_refresh_candidates();
+        assert!(
+            !candidates.iter().any(|(d, _)| d == "refreshing.test"),
+            "Entrada com refreshing=true não deve ser candidata. Candidatos: {:?}",
             candidates
         );
     }

@@ -102,6 +102,7 @@ impl CacheUpdater {
         for (domain, record_type) in candidates {
             match Self::refresh_entry(cache, resolver, query_log, &domain, &record_type).await {
                 Ok(true) => {
+                    // refresh_record() already cleared the refreshing flag.
                     refreshed += 1;
                     cache
                         .metrics()
@@ -109,9 +110,15 @@ impl CacheUpdater {
                         .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 }
                 Ok(false) => {
+                    // Entry was removed or is permanent; release the flag so it
+                    // does not permanently block future refresh cycles.
+                    cache.reset_refreshing(&domain, &record_type);
                     debug!(domain = %domain, "No new records to refresh");
                 }
                 Err(e) => {
+                    // DNS resolution failed; release the flag so the entry can
+                    // be retried in the next update cycle.
+                    cache.reset_refreshing(&domain, &record_type);
                     debug!(
                         domain = %domain,
                         record_type = %record_type,
