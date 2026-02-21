@@ -82,7 +82,7 @@ async fn test_soa_ttl_used_when_present() {
     assert!(matches!(data, CachedData::NegativeResponse));
     let ttl = remaining_ttl.unwrap_or(0);
     assert!(
-        ttl >= 290 && ttl <= 300,
+        (290..=300).contains(&ttl),
         "TTL from SOA minimum should be ~300, got {ttl}"
     );
 }
@@ -112,7 +112,7 @@ async fn test_soa_ttl_below_min_clamped_to_30() {
     let (_, _, remaining_ttl) = cached.expect("Should be cached");
     let ttl = remaining_ttl.unwrap_or(0);
     assert!(
-        ttl >= 29 && ttl <= 30,
+        (29..=30).contains(&ttl),
         "SOA TTL 10 should be clamped to min 30, got {ttl}"
     );
 }
@@ -142,7 +142,7 @@ async fn test_soa_ttl_above_max_clamped_to_3600() {
     let (_, _, remaining_ttl) = cached.expect("Should be cached");
     let ttl = remaining_ttl.unwrap_or(0);
     assert!(
-        ttl >= 3590 && ttl <= 3600,
+        (3590..=3600).contains(&ttl),
         "SOA TTL 86400 should be clamped to max 3600, got {ttl}"
     );
 }
