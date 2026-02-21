@@ -113,7 +113,8 @@ mod tests {
         CachedData::CanonicalName(Arc::from(name))
     }
 
-    /// Fix 2: Entrada expirada DENTRO da janela → candidato urgente.
+    /// Entrada expirada dentro da janela de acesso é candidato urgente de refresh
+    /// enquanto ainda estiver no grace period (`inserted_at + 2×TTL`).
     #[test]
     fn test_refresh_includes_expired_entry_within_window() {
         let cache = make_cache_with_window(7200);

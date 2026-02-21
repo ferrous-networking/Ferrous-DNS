@@ -71,7 +71,8 @@ mod tests {
         CachedData::IpAddresses(Arc::new(vec![addr]))
     }
 
-    /// Fix 1: compact() NÃO remove entradas expiradas — apenas marked_for_deletion.
+    /// Entradas expiradas permanecem no cache até `get()` as marcar para deleção;
+    /// `compact()` remove apenas entradas com `FLAG_DELETED` set.
     #[test]
     fn test_compact_retains_expired_entries() {
         let cache = make_cache(7200);
@@ -96,7 +97,7 @@ mod tests {
         assert_eq!(cache.len(), 1, "Entrada expirada deve permanecer no cache");
     }
 
-    /// Fix 1: compact() remove entradas marcadas para deleção (via get() após expiração).
+    /// `get()` marca entradas expiradas para deleção; `compact()` as remove em seguida.
     #[test]
     fn test_compact_removes_marked_for_deletion() {
         let cache = make_cache(7200);
