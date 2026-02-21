@@ -82,16 +82,20 @@ impl CachedResolver {
         )
     }
 
+    fn insert_negative(&self, query: &DnsQuery) {
+        let dynamic_ttl = self.negative_ttl_tracker.record_and_get_ttl(&query.domain);
+        self.cache.insert(
+            query.domain.as_ref(),
+            query.record_type,
+            CachedData::NegativeResponse,
+            dynamic_ttl,
+            Some(DnssecStatus::Insecure),
+        );
+    }
+
     fn store_in_cache(&self, query: &DnsQuery, resolution: &DnsResolution) {
         if resolution.addresses.is_empty() {
-            let dynamic_ttl = self.negative_ttl_tracker.record_and_get_ttl(&query.domain);
-            self.cache.insert(
-                query.domain.as_ref(),
-                query.record_type,
-                CachedData::NegativeResponse,
-                dynamic_ttl,
-                Some(DnssecStatus::Insecure),
-            );
+            self.insert_negative(query);
         } else {
             let addresses = Arc::clone(&resolution.addresses);
             let dnssec_status = resolution
@@ -210,14 +214,7 @@ impl DnsResolver for CachedResolver {
                 }
             }
             Err(_) => {
-                let dynamic_ttl = self.negative_ttl_tracker.record_and_get_ttl(&query.domain);
-                self.cache.insert(
-                    query.domain.as_ref(),
-                    query.record_type,
-                    CachedData::NegativeResponse,
-                    dynamic_ttl,
-                    Some(DnssecStatus::Insecure),
-                );
+                self.insert_negative(query);
                 self.inflight.remove(&key);
             }
         }
