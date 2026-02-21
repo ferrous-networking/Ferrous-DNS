@@ -1,4 +1,6 @@
+use ferrous_dns_domain::DomainError;
 use ferrous_dns_infrastructure::dns::fast_path;
+use ferrous_dns_infrastructure::dns::forwarding::ResponseParser;
 use ferrous_dns_infrastructure::dns::transport::DnsTransport;
 use ferrous_dns_infrastructure::dns::transport::{
     https::HttpsTransport, tcp::TcpTransport, tls::TlsTransport, udp::UdpTransport,
@@ -250,6 +252,61 @@ fn test_fast_path_response_includes_opt_when_client_sent_edns() {
         41,
         "OPT TYPE must be 41"
     );
+}
+
+// ── Fase 5: Health checker, error classification ──────────────────────────────
+
+#[test]
+fn test_health_checker_consecutive_failures_does_not_overflow() {
+    // With u8 wrapping, 256 failures would wrap back to 0 — at exactly 256
+    // the server would briefly appear healthy again. With u16 + saturating_add
+    // the counter must grow past u8::MAX without wrapping.
+    use ferrous_dns_infrastructure::dns::load_balancer::health::ServerHealth;
+
+    let mut health = ServerHealth::default();
+
+    // Simulate 300 consecutive failures using the same arithmetic as mark_failed().
+    for _ in 0..300u32 {
+        health.consecutive_failures = health.consecutive_failures.saturating_add(1);
+    }
+
+    assert_eq!(
+        health.consecutive_failures, 300,
+        "u16 saturating_add must record all 300 failures accurately"
+    );
+    assert!(
+        health.consecutive_failures > u8::MAX as u16,
+        "consecutive_failures ({}) must exceed u8::MAX — no u8 wrap-around",
+        health.consecutive_failures
+    );
+}
+
+#[test]
+fn test_transport_error_classification_typed_variants() {
+    // Typed variants must be classified as transport errors without string matching.
+    assert!(ResponseParser::is_transport_error(&DomainError::TransportTimeout {
+        server: "8.8.8.8:53".into()
+    }));
+    assert!(ResponseParser::is_transport_error(
+        &DomainError::TransportConnectionRefused {
+            server: "1.1.1.1:53".into()
+        }
+    ));
+    assert!(ResponseParser::is_transport_error(
+        &DomainError::TransportConnectionReset {
+            server: "9.9.9.9:53".into()
+        }
+    ));
+    assert!(ResponseParser::is_transport_error(
+        &DomainError::TransportNoHealthyServers
+    ));
+    assert!(ResponseParser::is_transport_error(
+        &DomainError::TransportAllServersUnreachable
+    ));
+
+    // Non-transport errors must NOT be misclassified.
+    assert!(!ResponseParser::is_transport_error(&DomainError::NxDomain));
+    assert!(!ResponseParser::is_transport_error(&DomainError::Blocked));
 }
 
 #[test]
