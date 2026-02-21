@@ -6,6 +6,7 @@ pub mod eviction;
 pub mod key;
 pub mod l1;
 pub mod metrics;
+pub mod negative_cache;
 pub mod negative_ttl;
 pub mod record;
 pub mod refresh;

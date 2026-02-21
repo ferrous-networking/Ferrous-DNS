@@ -3,6 +3,7 @@ use super::coarse_clock::coarse_now_secs;
 use super::eviction::{ActiveEvictionPolicy, EvictionStrategy};
 use super::key::{BorrowedKey, CacheKey};
 use super::l1::{l1_get, l1_insert};
+use super::negative_cache::NegativeDnsCache;
 use super::{CacheMetrics, CachedData, CachedRecord, DnssecStatus};
 use dashmap::DashMap;
 use ferrous_dns_domain::RecordType;
@@ -29,8 +30,6 @@ pub struct DnsCacheConfig {
 pub struct DnsCache {
     pub(super) cache: Arc<DashMap<CacheKey, CachedRecord, FxBuildHasher>>,
     pub(super) max_entries: usize,
-    /// Política de eviction ativa com dispatch via enum (zero-cost, sem vtable).
-    /// Substituiu os campos `eviction_strategy`, `min_frequency` e `min_lfuk_score`.
     pub(super) eviction_policy: ActiveEvictionPolicy,
     pub(super) min_threshold_bits: AtomicU64,
     pub(super) refresh_threshold: f64,
@@ -42,6 +41,7 @@ pub struct DnsCache {
     pub(super) bloom: Arc<AtomicBloom>,
     pub(super) access_window_secs: u64,
     pub(super) eviction_sample_size: usize,
+    pub(super) negative: NegativeDnsCache,
 }
 
 impl DnsCache {
@@ -83,6 +83,7 @@ impl DnsCache {
             bloom: Arc::new(bloom),
             access_window_secs: config.access_window_secs,
             eviction_sample_size: config.eviction_sample_size.max(1),
+            negative: NegativeDnsCache::new(config.max_entries),
         }
     }
 
@@ -115,40 +116,40 @@ impl DnsCache {
         }
 
         let borrowed = BorrowedKey::new(domain.as_ref(), *record_type);
-        if !self.bloom.check(&borrowed) {
-            self.metrics.misses.fetch_add(1, AtomicOrdering::Relaxed);
-            return None;
+        if self.bloom.check(&borrowed) {
+            let key = CacheKey::new(domain.as_ref(), *record_type);
+            if let Some(entry) = self.cache.get(&key) {
+                let record = entry.value();
+
+                let now_secs = coarse_now_secs();
+
+                if record.is_stale_usable_at_secs(now_secs) {
+                    record.try_set_refreshing();
+                    self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
+                    record.record_hit();
+                    return Some((record.data.clone(), Some(record.dnssec_status), Some(0)));
+                }
+
+                if record.is_expired_at_secs(now_secs) {
+                    record.mark_for_deletion();
+                    drop(entry);
+                } else {
+                    self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
+                    record.record_hit();
+                    let remaining_ttl = record.expires_at_secs.saturating_sub(now_secs) as u32;
+                    self.promote_to_l1(domain.as_ref(), record_type, record, now_secs);
+                    return Some((
+                        record.data.clone(),
+                        Some(record.dnssec_status),
+                        Some(remaining_ttl),
+                    ));
+                }
+            }
         }
 
-        let key = CacheKey::new(domain.as_ref(), *record_type);
-        if let Some(entry) = self.cache.get(&key) {
-            let record = entry.value();
-
-            let now_secs = coarse_now_secs();
-
-            if record.is_stale_usable_at_secs(now_secs) {
-                record.try_set_refreshing();
-                self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
-                record.record_hit();
-                return Some((record.data.clone(), Some(record.dnssec_status), Some(0)));
-            }
-
-            if record.is_expired_at_secs(now_secs) {
-                record.mark_for_deletion();
-                drop(entry);
-                self.metrics.misses.fetch_add(1, AtomicOrdering::Relaxed);
-                return None;
-            }
-
+        if let Some(remaining_ttl) = self.negative.get(domain.as_ref(), record_type) {
             self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
-            record.record_hit();
-            let remaining_ttl = record.expires_at_secs.saturating_sub(now_secs) as u32;
-            self.promote_to_l1(domain.as_ref(), record_type, record, now_secs);
-            return Some((
-                record.data.clone(),
-                Some(record.dnssec_status),
-                Some(remaining_ttl),
-            ));
+            return Some((CachedData::NegativeResponse, None, Some(remaining_ttl)));
         }
 
         self.metrics.misses.fetch_add(1, AtomicOrdering::Relaxed);
@@ -163,6 +164,11 @@ impl DnsCache {
         ttl: u32,
         dnssec_status: Option<DnssecStatus>,
     ) {
+        if data.is_negative() {
+            self.negative.insert(domain, record_type, ttl);
+            return;
+        }
+
         let key = CacheKey::new(domain, record_type);
 
         if self.cache.len() >= self.max_entries {
@@ -243,6 +249,7 @@ impl DnsCache {
     pub fn clear(&self) {
         self.cache.clear();
         self.bloom.clear();
+        self.negative.clear();
         self.metrics.hits.store(0, AtomicOrdering::Relaxed);
         self.metrics.misses.store(0, AtomicOrdering::Relaxed);
         self.metrics.evictions.store(0, AtomicOrdering::Relaxed);
