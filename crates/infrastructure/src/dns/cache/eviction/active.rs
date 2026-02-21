@@ -26,12 +26,16 @@ impl ActiveEvictionPolicy {
         strategy: EvictionStrategy,
         min_frequency: u64,
         min_lfuk_score: f64,
+        lfuk_k_value: f64,
     ) -> Self {
         match strategy {
             EvictionStrategy::LRU => Self::Lru(LruPolicy),
             EvictionStrategy::HitRate => Self::HitRate(HitRatePolicy),
             EvictionStrategy::LFU => Self::Lfu(LfuPolicy { min_frequency }),
-            EvictionStrategy::LFUK => Self::Lfuk(LfukPolicy { min_lfuk_score }),
+            EvictionStrategy::LFUK => Self::Lfuk(LfukPolicy {
+                min_lfuk_score,
+                k_value: lfuk_k_value,
+            }),
         }
     }
 

@@ -23,6 +23,7 @@ pub struct DnsCacheConfig {
     pub shard_amount: usize,
     pub access_window_secs: u64,
     pub eviction_sample_size: usize,
+    pub lfuk_k_value: f64,
 }
 
 pub struct DnsCache {
@@ -49,6 +50,7 @@ impl DnsCache {
             config.eviction_strategy,
             config.min_frequency,
             config.min_lfuk_score,
+            config.lfuk_k_value,
         );
 
         info!(

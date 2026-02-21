@@ -152,6 +152,7 @@ async fn create_test_app() -> (Router, Arc<SqliteClientRepository>, sqlx::Sqlite
             shard_amount: 4,
             access_window_secs: 7200,
             eviction_sample_size: 8,
+            lfuk_k_value: 0.5,
         },
     ));
 

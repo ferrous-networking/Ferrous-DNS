@@ -214,6 +214,7 @@ impl DnsServices {
                 shard_amount: config.dns.cache_shard_amount,
                 access_window_secs: config.dns.cache_access_window_secs,
                 eviction_sample_size: config.dns.cache_eviction_sample_size,
+                lfuk_k_value: 0.5,
             }))
         } else {
             Arc::new(DnsCache::new(DnsCacheConfig {
@@ -228,6 +229,7 @@ impl DnsServices {
                 shard_amount: 4,
                 access_window_secs: 0,
                 eviction_sample_size: 8,
+                lfuk_k_value: 0.5,
             }))
         }
     }
