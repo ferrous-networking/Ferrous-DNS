@@ -36,10 +36,6 @@ impl ParallelStrategy {
 
         let mut futs = FuturesUnordered::new();
 
-        // The outer `timeout(timeout_ms)` below is the authoritative deadline for the
-        // entire parallel race. Per-server queries receive a larger safety-net timeout
-        // (2× the authoritative deadline) so the outer fires first when all servers
-        // are slow, giving clean cancellation without two identical deadlines racing.
         let per_server_timeout_ms = timeout_ms.saturating_mul(2);
 
         let domain_arc: std::sync::Arc<str> = domain.into();

@@ -459,7 +459,7 @@ impl DnsCache {
         }
     }
 
-    /// Delega o cálculo de score à política de eviction ativa (zero-cost via enum dispatch).
+
     #[inline(always)]
     pub(super) fn compute_score(&self, record: &CachedRecord, now_secs: u64) -> f64 {
         self.eviction_policy.compute_score(record, now_secs)

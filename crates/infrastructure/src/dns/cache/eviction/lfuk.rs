@@ -23,9 +23,6 @@ impl EvictionPolicy for LfukPolicy {
         let last_access = record.counters.last_access.load(Ordering::Relaxed);
         let hits = record.counters.hit_count.load(Ordering::Relaxed) as f64;
 
-        // New entries (hits=0) receive a bootstrap score equal to min_lfuk_score.
-        // This prevents freshly inserted entries from being preferentially evicted
-        // before they have had a chance to accumulate access history.
         if hits == 0.0 {
             return self.min_lfuk_score;
         }

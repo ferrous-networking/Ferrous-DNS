@@ -11,13 +11,6 @@ struct NegativeEntry {
     expires_at_secs: u64,
 }
 
-/// Separate cache for negative DNS responses (NXDOMAIN / NODATA).
-///
-/// In blocker workloads 50-70% of queries result in NXDOMAIN. Keeping
-/// negative entries in the same DashMap as positive entries causes shard
-/// contention, biases eviction scoring, and inflates the bloom filter's
-/// false-positive rate. This lightweight cache uses a plain DashMap with
-/// TTL expiry and no scoring overhead.
 pub struct NegativeDnsCache {
     cache: DashMap<CacheKey, NegativeEntry, FxBuildHasher>,
     max_entries: usize,
@@ -38,8 +31,6 @@ impl NegativeDnsCache {
         let key = CacheKey::new(domain, *record_type);
         let now = coarse_now_secs();
 
-        // Use read lock (get) for the common path to avoid write contention
-        // on hot negative-cache workloads where 50-70% of queries are NXDOMAIN.
         if let Some(entry) = self.cache.get(&key) {
             let expires = entry.value().expires_at_secs;
             if now < expires {
@@ -49,7 +40,6 @@ impl NegativeDnsCache {
             return None;
         }
 
-        // Entry exists but is expired — acquire write lock only for removal.
         self.cache.remove(&key);
         None
     }

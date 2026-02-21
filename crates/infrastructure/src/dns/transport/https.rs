@@ -68,7 +68,6 @@ impl DnsTransport for HttpsTransport {
             )));
         }
 
-        // Deduct the time already spent so the total operation stays within `timeout`.
         let remaining = timeout
             .checked_sub(start.elapsed())
             .unwrap_or(Duration::ZERO);

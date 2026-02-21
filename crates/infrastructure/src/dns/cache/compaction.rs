@@ -3,12 +3,7 @@ use std::sync::atomic::Ordering as AtomicOrdering;
 use tracing::debug;
 
 impl DnsCache {
-    /// Remove entradas marcadas para deleção (lazy deletion).
-    ///
-    /// Entradas expiradas **não** são removidas aqui: são gerenciadas pelo
-    /// eviction system por score quando o cache encher, ou pelo ciclo de refresh
-    /// urgente quando dentro da `access_window`. Isso permite que entradas
-    /// populares expiradas sobrevivam até serem renovadas ou removidas por score baixo.
+
     pub fn compact(&self) -> usize {
         let before = self.cache.len();
         self.cache

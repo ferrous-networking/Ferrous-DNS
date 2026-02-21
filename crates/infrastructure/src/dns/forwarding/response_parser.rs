@@ -103,7 +103,6 @@ impl ResponseParser {
     }
 
     pub fn is_transport_error(error: &DomainError) -> bool {
-        // Prefer structured enum variants for precision.
         if matches!(
             error,
             DomainError::TransportTimeout { .. }
@@ -115,7 +114,6 @@ impl ResponseParser {
             return true;
         }
 
-        // Fallback: string matching for errors still using the legacy InvalidDomainName variant.
         let error_str = error.to_string().to_lowercase();
         error_str.contains("timeout")
             || error_str.contains("timed out")
