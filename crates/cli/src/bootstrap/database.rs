@@ -3,11 +3,6 @@ use ferrous_dns_infrastructure::database::{create_read_pool, create_write_pool};
 use sqlx::SqlitePool;
 use tracing::{error, info};
 
-/// Initialise both the write pool and the read pool.
-///
-/// Returns `(write_pool, read_pool)`.
-/// The write pool runs migrations and is used by background flush tasks.
-/// The read pool is used by dashboard and API read endpoints.
 pub async fn init_database(
     database_url: &str,
     cfg: &DatabaseConfig,

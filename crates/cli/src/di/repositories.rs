@@ -31,14 +31,6 @@ pub struct Repositories {
 }
 
 impl Repositories {
-    /// Construct all repositories.
-    ///
-    /// `write_pool` is used by background write tasks (query-log flush, client
-    /// tracking) and by admin CRUD operations.
-    ///
-    /// `read_pool` is used by the query-log repository's read methods (stats,
-    /// recent queries, timeline) so that dashboard requests are never blocked
-    /// by concurrent write transactions.
     pub async fn new(
         write_pool: SqlitePool,
         read_pool: SqlitePool,

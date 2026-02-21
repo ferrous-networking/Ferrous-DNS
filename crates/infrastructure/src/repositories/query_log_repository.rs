@@ -12,13 +12,9 @@ use std::time::{Duration, SystemTime};
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
-/// Number of columns per row in `query_log` INSERT.
 const COLS_PER_ROW: usize = 13;
-/// SQLite's default SQLITE_LIMIT_VARIABLE_NUMBER is 999.
-/// Each chunk inserts at most this many rows in a single statement.
-const ROWS_PER_CHUNK: usize = 999 / COLS_PER_ROW; // 76
+const ROWS_PER_CHUNK: usize = 999 / COLS_PER_ROW;
 
-/// Build `INSERT INTO query_log (...) VALUES (?,…), (?,…), …` for `n` rows.
 fn build_multi_insert_sql(n: usize) -> String {
     debug_assert!(n > 0 && n <= ROWS_PER_CHUNK);
     const HEADER: &str = "INSERT INTO query_log \
@@ -144,16 +140,10 @@ fn row_to_query_log(row: SqliteRow) -> Option<QueryLog> {
 }
 
 pub struct SqliteQueryLogRepository {
-    /// Used by: flush_loop (batch INSERTs), delete_older_than.
     write_pool: SqlitePool,
-    /// Used by: all read methods (get_stats, get_recent, get_recent_paged, etc.).
-    /// Kept on a separate pool so dashboard reads never wait for the flush task.
     read_pool: SqlitePool,
     sender: mpsc::Sender<QueryLogEntry>,
-    /// Log 1 of every `sample_rate` queries; 1 = log all.
     sample_rate: u32,
-    /// Monotonic counter for uniform sampling. Relaxed ordering is safe: we
-    /// only need to avoid data races, not sequential consistency.
     sample_counter: AtomicU64,
 }
 
@@ -301,9 +291,6 @@ impl QueryLogRepository for SqliteQueryLogRepository {
     }
 
     fn log_query_sync(&self, query: &QueryLog) -> Result<(), DomainError> {
-        // Uniform sampling: drop 1 - (1/sample_rate) fraction of queries.
-        // AtomicU64 with Relaxed ordering avoids data races while adding no
-        // synchronisation overhead on the hot path.
         if self.sample_rate > 1 {
             let n = self.sample_counter.fetch_add(1, Ordering::Relaxed);
             if !n.is_multiple_of(self.sample_rate as u64) {
@@ -375,9 +362,6 @@ impl QueryLogRepository for SqliteQueryLogRepository {
             "Fetching paginated queries"
         );
 
-        // Fetch limit+1 rows to determine whether a next page exists without
-        // running a separate COUNT(*) query over the full 24-hour window.
-        // This keeps the query O(page_size) regardless of total table size.
         let fetch_limit = limit as i64 + 1;
 
         let rows = sqlx::query(
@@ -401,16 +385,12 @@ impl QueryLogRepository for SqliteQueryLogRepository {
 
         let mut rows = rows;
         let has_more = rows.len() as u32 > limit;
-        // Trim the extra sentinel row before converting.
         if has_more {
             rows.truncate(limit as usize);
         }
 
         let entries: Vec<QueryLog> = rows.into_iter().filter_map(row_to_query_log).collect();
 
-        // Return an estimated total that keeps the frontend pagination working:
-        // if there are more rows the total is offset + limit + 1 (at least one
-        // more page), otherwise it is the exact count.
         let estimated_total = if has_more {
             offset as u64 + limit as u64 + 1
         } else {
