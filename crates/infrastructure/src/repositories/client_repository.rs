@@ -77,15 +77,14 @@ impl ClientRepository for SqliteClientRepository {
     async fn get_or_create(&self, ip_address: IpAddr) -> Result<Client, DomainError> {
         let ip_str = ip_address.to_string();
 
-        let existing: Option<ClientRow> =
-            sqlx::query_as::<_, ClientRow>(CLIENT_SELECT_BY_IP)
-                .bind(&ip_str)
-                .fetch_optional(&self.pool)
-                .await
-                .map_err(|e| {
-                    error!(error = %e, "Failed to query client");
-                    DomainError::DatabaseError(e.to_string())
-                })?;
+        let existing: Option<ClientRow> = sqlx::query_as::<_, ClientRow>(CLIENT_SELECT_BY_IP)
+            .bind(&ip_str)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to query client");
+                DomainError::DatabaseError(e.to_string())
+            })?;
 
         if let Some(row) = existing {
             let client = row_to_client(row)
@@ -225,14 +224,14 @@ impl ClientRepository for SqliteClientRepository {
     #[instrument(skip(self))]
     async fn get_all(&self, limit: u32, offset: u32) -> Result<Vec<Client>, DomainError> {
         let rows = sqlx::query_as::<_, ClientRow>(CLIENT_SELECT_ALL)
-        .bind(limit as i64)
-        .bind(offset as i64)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to fetch clients");
-            DomainError::DatabaseError(e.to_string())
-        })?;
+            .bind(limit as i64)
+            .bind(offset as i64)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to fetch clients");
+                DomainError::DatabaseError(e.to_string())
+            })?;
 
         Ok(rows.into_iter().filter_map(row_to_client).collect())
     }
@@ -240,14 +239,14 @@ impl ClientRepository for SqliteClientRepository {
     #[instrument(skip(self))]
     async fn get_active(&self, days: u32, limit: u32) -> Result<Vec<Client>, DomainError> {
         let rows = sqlx::query_as::<_, ClientRow>(CLIENT_SELECT_ACTIVE)
-        .bind(format!("-{} days", days))
-        .bind(limit as i64)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to fetch active clients");
-            DomainError::DatabaseError(e.to_string())
-        })?;
+            .bind(format!("-{} days", days))
+            .bind(limit as i64)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to fetch active clients");
+                DomainError::DatabaseError(e.to_string())
+            })?;
 
         Ok(rows.into_iter().filter_map(row_to_client).collect())
     }
@@ -296,13 +295,13 @@ impl ClientRepository for SqliteClientRepository {
     #[instrument(skip(self))]
     async fn get_needs_mac_update(&self, limit: u32) -> Result<Vec<Client>, DomainError> {
         let rows = sqlx::query_as::<_, ClientRow>(CLIENT_SELECT_NEEDS_MAC_UPDATE)
-        .bind(limit as i64)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to fetch clients needing MAC update");
-            DomainError::DatabaseError(e.to_string())
-        })?;
+            .bind(limit as i64)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to fetch clients needing MAC update");
+                DomainError::DatabaseError(e.to_string())
+            })?;
 
         Ok(rows.into_iter().filter_map(row_to_client).collect())
     }
@@ -310,13 +309,13 @@ impl ClientRepository for SqliteClientRepository {
     #[instrument(skip(self))]
     async fn get_needs_hostname_update(&self, limit: u32) -> Result<Vec<Client>, DomainError> {
         let rows = sqlx::query_as::<_, ClientRow>(CLIENT_SELECT_NEEDS_HOSTNAME_UPDATE)
-        .bind(limit as i64)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to fetch clients needing hostname update");
-            DomainError::DatabaseError(e.to_string())
-        })?;
+            .bind(limit as i64)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to fetch clients needing hostname update");
+                DomainError::DatabaseError(e.to_string())
+            })?;
 
         Ok(rows.into_iter().filter_map(row_to_client).collect())
     }

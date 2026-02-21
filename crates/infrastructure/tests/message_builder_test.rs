@@ -62,7 +62,8 @@ fn test_query_id_uniqueness() {
     let mut ids = std::collections::HashSet::new();
 
     for _ in 0..100 {
-        let (id, _) = MessageBuilder::build_query_with_id("test.com", &RecordType::A, false).unwrap();
+        let (id, _) =
+            MessageBuilder::build_query_with_id("test.com", &RecordType::A, false).unwrap();
         ids.insert(id);
     }
 
@@ -185,7 +186,8 @@ fn test_message_size_reasonable() {
 fn test_different_domains_different_sizes() {
     let short = MessageBuilder::build_query("a.co", &RecordType::A, false).unwrap();
     let long =
-        MessageBuilder::build_query("very.long.subdomain.example.com", &RecordType::A, false).unwrap();
+        MessageBuilder::build_query("very.long.subdomain.example.com", &RecordType::A, false)
+            .unwrap();
 
     assert!(
         long.len() > short.len(),

@@ -25,7 +25,12 @@ impl FailingResolver {
 impl DnsResolver for FailingResolver {
     async fn resolve(&self, _query: &DnsQuery) -> Result<DnsResolution, DomainError> {
         tokio::time::sleep(Duration::from_millis(20)).await;
-        let err = self.error.lock().unwrap().take().unwrap_or(DomainError::NxDomain);
+        let err = self
+            .error
+            .lock()
+            .unwrap()
+            .take()
+            .unwrap_or(DomainError::NxDomain);
         Err(err)
     }
 }
@@ -75,7 +80,10 @@ async fn test_inflight_map_empty_after_leader_error() {
 
     for result in &results {
         let inner = result.as_ref().unwrap();
-        assert!(inner.is_err(), "all followers should receive error or NxDomain");
+        assert!(
+            inner.is_err(),
+            "all followers should receive error or NxDomain"
+        );
     }
 }
 

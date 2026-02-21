@@ -33,7 +33,16 @@ impl BalancedStrategy {
 
         for i in 0..servers.len() {
             let index = (start_index + i) % servers.len();
-            match query_server(servers[index], domain, record_type, timeout_ms, dnssec_ok, emitter).await {
+            match query_server(
+                servers[index],
+                domain,
+                record_type,
+                timeout_ms,
+                dnssec_ok,
+                emitter,
+            )
+            .await
+            {
                 Ok(r) => {
                     debug!(server = %r.server_addr, latency_ms = r.latency_ms, "Server responded");
                     return Ok(UpstreamResult {

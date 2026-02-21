@@ -59,7 +59,8 @@ pub(crate) const CLIENT_SELECT_ACTIVE: &str = "SELECT id, ip_address, mac_addres
             group_id
      FROM clients WHERE last_seen > datetime('now', ?) ORDER BY last_seen DESC LIMIT ?";
 
-pub(crate) const CLIENT_SELECT_NEEDS_MAC_UPDATE: &str = "SELECT id, ip_address, mac_address, hostname,
+pub(crate) const CLIENT_SELECT_NEEDS_MAC_UPDATE: &str =
+    "SELECT id, ip_address, mac_address, hostname,
             datetime(first_seen) as first_seen,
             datetime(last_seen) as last_seen,
             query_count,
@@ -71,7 +72,8 @@ pub(crate) const CLIENT_SELECT_NEEDS_MAC_UPDATE: &str = "SELECT id, ip_address, 
      AND last_seen > datetime('now', '-1 day')
      ORDER BY last_seen DESC LIMIT ?";
 
-pub(crate) const CLIENT_SELECT_NEEDS_HOSTNAME_UPDATE: &str = "SELECT id, ip_address, mac_address, hostname,
+pub(crate) const CLIENT_SELECT_NEEDS_HOSTNAME_UPDATE: &str =
+    "SELECT id, ip_address, mac_address, hostname,
             datetime(first_seen) as first_seen,
             datetime(last_seen) as last_seen,
             query_count,

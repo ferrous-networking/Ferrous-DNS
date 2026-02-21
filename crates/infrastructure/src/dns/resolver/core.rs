@@ -14,8 +14,16 @@ pub struct CoreResolver {
 }
 
 impl CoreResolver {
-    pub fn new(pool_manager: Arc<PoolManager>, query_timeout_ms: u64, dnssec_enabled: bool) -> Self {
-        info!(timeout_ms = query_timeout_ms, dnssec = dnssec_enabled, "Core DNS resolver created");
+    pub fn new(
+        pool_manager: Arc<PoolManager>,
+        query_timeout_ms: u64,
+        dnssec_enabled: bool,
+    ) -> Self {
+        info!(
+            timeout_ms = query_timeout_ms,
+            dnssec = dnssec_enabled,
+            "Core DNS resolver created"
+        );
 
         Self {
             pool_manager,
@@ -86,7 +94,12 @@ impl DnsResolver for CoreResolver {
 
         let result = self
             .pool_manager
-            .query(&query.domain, &query.record_type, self.query_timeout_ms, self.dnssec_enabled)
+            .query(
+                &query.domain,
+                &query.record_type,
+                self.query_timeout_ms,
+                self.dnssec_enabled,
+            )
             .await?;
 
         let addresses = Arc::new(result.response.addresses);

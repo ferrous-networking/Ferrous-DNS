@@ -70,7 +70,10 @@ async fn test_soa_ttl_used_when_present() {
         Arc::new(NegativeQueryTracker::new()),
     );
 
-    let query = DnsQuery { domain: Arc::from("nxdomain.example.com"), record_type: RecordType::A };
+    let query = DnsQuery {
+        domain: Arc::from("nxdomain.example.com"),
+        record_type: RecordType::A,
+    };
     let _ = resolver.resolve(&query).await;
 
     let cached = cache.get(&Arc::from("nxdomain.example.com"), &RecordType::A);
@@ -78,7 +81,10 @@ async fn test_soa_ttl_used_when_present() {
     let (data, _, remaining_ttl) = cached.unwrap();
     assert!(matches!(data, CachedData::NegativeResponse));
     let ttl = remaining_ttl.unwrap_or(0);
-    assert!(ttl >= 290 && ttl <= 300, "TTL from SOA minimum should be ~300, got {ttl}");
+    assert!(
+        ttl >= 290 && ttl <= 300,
+        "TTL from SOA minimum should be ~300, got {ttl}"
+    );
 }
 
 #[tokio::test]
@@ -96,13 +102,19 @@ async fn test_soa_ttl_below_min_clamped_to_30() {
         Arc::new(NegativeQueryTracker::new()),
     );
 
-    let query = DnsQuery { domain: Arc::from("low-ttl.example.com"), record_type: RecordType::A };
+    let query = DnsQuery {
+        domain: Arc::from("low-ttl.example.com"),
+        record_type: RecordType::A,
+    };
     let _ = resolver.resolve(&query).await;
 
     let cached = cache.get(&Arc::from("low-ttl.example.com"), &RecordType::A);
     let (_, _, remaining_ttl) = cached.expect("Should be cached");
     let ttl = remaining_ttl.unwrap_or(0);
-    assert!(ttl >= 29 && ttl <= 30, "SOA TTL 10 should be clamped to min 30, got {ttl}");
+    assert!(
+        ttl >= 29 && ttl <= 30,
+        "SOA TTL 10 should be clamped to min 30, got {ttl}"
+    );
 }
 
 #[tokio::test]
@@ -120,13 +132,19 @@ async fn test_soa_ttl_above_max_clamped_to_3600() {
         Arc::new(NegativeQueryTracker::new()),
     );
 
-    let query = DnsQuery { domain: Arc::from("high-ttl.example.com"), record_type: RecordType::A };
+    let query = DnsQuery {
+        domain: Arc::from("high-ttl.example.com"),
+        record_type: RecordType::A,
+    };
     let _ = resolver.resolve(&query).await;
 
     let cached = cache.get(&Arc::from("high-ttl.example.com"), &RecordType::A);
     let (_, _, remaining_ttl) = cached.expect("Should be cached");
     let ttl = remaining_ttl.unwrap_or(0);
-    assert!(ttl >= 3590 && ttl <= 3600, "SOA TTL 86400 should be clamped to max 3600, got {ttl}");
+    assert!(
+        ttl >= 3590 && ttl <= 3600,
+        "SOA TTL 86400 should be clamped to max 3600, got {ttl}"
+    );
 }
 
 #[tokio::test]
@@ -143,11 +161,17 @@ async fn test_fallback_to_tracker_when_no_soa() {
         Arc::new(NegativeQueryTracker::new()),
     );
 
-    let query = DnsQuery { domain: Arc::from("no-soa.example.com"), record_type: RecordType::A };
+    let query = DnsQuery {
+        domain: Arc::from("no-soa.example.com"),
+        record_type: RecordType::A,
+    };
     let _ = resolver.resolve(&query).await;
 
     let cached = cache.get(&Arc::from("no-soa.example.com"), &RecordType::A);
-    assert!(cached.is_some(), "Should still cache even without SOA using tracker fallback");
+    assert!(
+        cached.is_some(),
+        "Should still cache even without SOA using tracker fallback"
+    );
     let (data, _, _) = cached.unwrap();
     assert!(matches!(data, CachedData::NegativeResponse));
 }

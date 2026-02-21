@@ -36,10 +36,7 @@ fn validate_response_id(
     Ok(())
 }
 
-fn validate_response_source(
-    from: SocketAddr,
-    expected: SocketAddr,
-) -> Result<(), DomainError> {
+fn validate_response_source(from: SocketAddr, expected: SocketAddr) -> Result<(), DomainError> {
     if from.ip() != expected.ip() {
         warn!(
             expected = %expected.ip(),

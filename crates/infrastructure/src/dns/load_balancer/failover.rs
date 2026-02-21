@@ -26,7 +26,16 @@ impl FailoverStrategy {
         debug!(strategy = "failover", servers = servers.len(), domain = %domain, "Trying sequentially");
 
         for (index, protocol) in servers.iter().enumerate() {
-            match query_server(protocol, domain, record_type, timeout_ms, dnssec_ok, emitter).await {
+            match query_server(
+                protocol,
+                domain,
+                record_type,
+                timeout_ms,
+                dnssec_ok,
+                emitter,
+            )
+            .await
+            {
                 Ok(r) => {
                     debug!(server = %r.server_addr, latency_ms = r.latency_ms, position = index, "Server responded");
                     return Ok(UpstreamResult {

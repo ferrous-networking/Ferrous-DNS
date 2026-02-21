@@ -277,7 +277,10 @@ impl ChainVerifier {
 
         debug!(domain = %domain, "DS cache miss, querying DNS");
 
-        let result = self.pool_manager.query(domain, &RecordType::DS, 5000, true).await;
+        let result = self
+            .pool_manager
+            .query(domain, &RecordType::DS, 5000, true)
+            .await;
 
         match result {
             Ok(upstream_result) => {

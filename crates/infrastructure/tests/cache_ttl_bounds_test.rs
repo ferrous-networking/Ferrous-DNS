@@ -29,7 +29,13 @@ fn make_ip_data(ip: &str) -> CachedData {
 #[test]
 fn test_ttl_zero_clamped_to_minimum() {
     let cache = make_cache();
-    cache.insert("example.com", RecordType::A, make_ip_data("1.2.3.4"), 0, None);
+    cache.insert(
+        "example.com",
+        RecordType::A,
+        make_ip_data("1.2.3.4"),
+        0,
+        None,
+    );
     let ttl = cache.get_ttl("example.com", &RecordType::A);
     assert_eq!(ttl, Some(1), "TTL 0 should be clamped to MIN (1)");
 }
@@ -45,15 +51,29 @@ fn test_ttl_above_max_clamped_to_86400() {
         None,
     );
     let ttl = cache.get_ttl("example.com", &RecordType::A);
-    assert_eq!(ttl, Some(86_400), "TTL above max should be clamped to 86400");
+    assert_eq!(
+        ttl,
+        Some(86_400),
+        "TTL above max should be clamped to 86400"
+    );
 }
 
 #[test]
 fn test_ttl_within_bounds_unchanged() {
     let cache = make_cache();
-    cache.insert("example.com", RecordType::A, make_ip_data("1.2.3.4"), 300, None);
+    cache.insert(
+        "example.com",
+        RecordType::A,
+        make_ip_data("1.2.3.4"),
+        300,
+        None,
+    );
     let ttl = cache.get_ttl("example.com", &RecordType::A);
-    assert_eq!(ttl, Some(300), "TTL within valid range should be stored as-is");
+    assert_eq!(
+        ttl,
+        Some(300),
+        "TTL within valid range should be stored as-is"
+    );
 }
 
 #[test]
@@ -62,7 +82,11 @@ fn test_permanent_records_ignore_bounds() {
     cache.insert_permanent("example.com", RecordType::A, make_ip_data("1.2.3.4"), None);
     let ttl = cache.get_ttl("example.com", &RecordType::A);
     let permanent_ttl = 365u32 * 24 * 60 * 60;
-    assert_eq!(ttl, Some(permanent_ttl), "Permanent records should retain their large TTL");
+    assert_eq!(
+        ttl,
+        Some(permanent_ttl),
+        "Permanent records should retain their large TTL"
+    );
 }
 
 #[test]
@@ -81,6 +105,9 @@ fn test_negative_response_ttl_clamped() {
         "Negative response with clamped TTL should be retrievable"
     );
     if let Some((_, _, Some(remaining))) = result {
-        assert!(remaining >= 1, "Remaining TTL should be at least 1 after clamping");
+        assert!(
+            remaining >= 1,
+            "Remaining TTL should be at least 1 after clamping"
+        );
     }
 }

@@ -1,10 +1,10 @@
+use crate::state::AppState;
 use axum::{
     extract::{Request, State},
     http::{Method, StatusCode},
     middleware::Next,
     response::Response,
 };
-use crate::state::AppState;
 
 pub async fn require_api_key(
     State(state): State<AppState>,

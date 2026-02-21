@@ -35,7 +35,10 @@ fn test_edns0_version_zero_accepted() {
     let mut buf = build_a_query("example.com");
     append_opt_record(&mut buf, 0, false);
     let result = parse_query(&buf);
-    assert!(result.is_some(), "version=0 should be accepted on fast path");
+    assert!(
+        result.is_some(),
+        "version=0 should be accepted on fast path"
+    );
 }
 
 #[test]
@@ -43,7 +46,10 @@ fn test_edns0_version_one_falls_back_to_hickory() {
     let mut buf = build_a_query("example.com");
     append_opt_record(&mut buf, 1, false);
     let result = parse_query(&buf);
-    assert!(result.is_none(), "version=1 should fall back (Hickory handles BADVERS)");
+    assert!(
+        result.is_none(),
+        "version=1 should fall back (Hickory handles BADVERS)"
+    );
 }
 
 #[test]
