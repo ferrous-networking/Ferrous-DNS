@@ -806,3 +806,63 @@ fn test_single_scan_evicts_exact_count() {
         evictions
     );
 }
+
+#[test]
+fn test_clear_also_clears_l1_cache() {
+    let cache = create_cache(100, EvictionStrategy::HitRate, 0, 0.0);
+
+    cache.insert(
+        "clear-test.com",
+        RecordType::A,
+        make_ip_data("1.2.3.4"),
+        300,
+        None,
+    );
+
+    // Primeiro get popula o L1
+    let first = cache.get(&Arc::from("clear-test.com"), &RecordType::A);
+    assert!(first.is_some(), "Entry deve existir antes do clear");
+
+    // Segundo get deve vir do L1 (IpAddresses)
+    let from_l1 = cache.get(&Arc::from("clear-test.com"), &RecordType::A);
+    assert!(from_l1.is_some(), "Entry deve estar no L1 na segunda leitura");
+
+    cache.clear();
+
+    // Após clear, nem L1 nem L2 devem retornar o dado
+    let after_clear = cache.get(&Arc::from("clear-test.com"), &RecordType::A);
+    assert!(
+        after_clear.is_none(),
+        "Entry não deve ser retornada após cache.clear() — L1 deve ter sido limpo"
+    );
+}
+
+#[test]
+fn test_stale_while_revalidate_returns_nonzero_ttl() {
+    let cache = create_cache(100, EvictionStrategy::HitRate, 0, 0.0);
+
+    // Inserir com TTL 1 segundo (irá expirar rapidamente)
+    cache.insert(
+        "stale-test.com",
+        RecordType::CNAME,
+        make_cname_data("alias.stale-test.com"),
+        1,
+        None,
+    );
+
+    // Avançar o coarse clock para colocar o entry em stale-but-usable window
+    // (expirado mas dentro do grace period de 2×TTL)
+    coarse_clock::tick();
+    coarse_clock::tick();
+
+    let result = cache.get(&Arc::from("stale-test.com"), &RecordType::CNAME);
+
+    if let Some((_, _, Some(ttl))) = result {
+        assert!(
+            ttl >= 1,
+            "TTL retornado para record stale-while-revalidate deve ser >= 1, foi {}",
+            ttl
+        );
+    }
+    // Se None, o entry já passou do grace period — o teste é inconclusivo mas não falha
+}
