@@ -354,7 +354,12 @@ impl DnsCache {
             if record.expires_at_secs <= now_secs {
                 return;
             }
-            l1_insert(domain, record_type, Arc::clone(addresses), record.expires_at_secs);
+            l1_insert(
+                domain,
+                record_type,
+                Arc::clone(addresses),
+                record.expires_at_secs,
+            );
         }
     }
 

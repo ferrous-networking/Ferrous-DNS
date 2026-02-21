@@ -26,7 +26,10 @@ pub struct NegativeDnsCache {
 impl NegativeDnsCache {
     pub fn new(max_entries: usize) -> Self {
         Self {
-            cache: DashMap::with_capacity_and_hasher(max_entries.min(MAX_ENTRIES_CAP), FxBuildHasher),
+            cache: DashMap::with_capacity_and_hasher(
+                max_entries.min(MAX_ENTRIES_CAP),
+                FxBuildHasher,
+            ),
             max_entries,
         }
     }

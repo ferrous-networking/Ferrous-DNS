@@ -25,7 +25,11 @@ impl AtomicBloom {
         let num_bits = Self::optimal_num_bits(capacity, fp_rate);
         let num_hashes = Self::optimal_num_hashes(capacity, num_bits);
         let num_words = num_bits.div_ceil(64);
-        let make_slot = || (0..num_words).map(|_| AtomicU64::new(0)).collect::<Vec<_>>();
+        let make_slot = || {
+            (0..num_words)
+                .map(|_| AtomicU64::new(0))
+                .collect::<Vec<_>>()
+        };
         Self {
             slots: [make_slot(), make_slot()],
             active: AtomicUsize::new(0),
@@ -51,20 +55,14 @@ impl AtomicBloom {
                     || (self.slots[b][word].load(AtomicOrdering::Relaxed) & bit != 0)
             };
 
-            check_both(0)
-                && check_both(1)
-                && check_both(2)
-                && check_both(3)
-                && check_both(4)
+            check_both(0) && check_both(1) && check_both(2) && check_both(3) && check_both(4)
         } else {
             for i in 0..num_hashes as u64 {
                 let idx = Self::nth_hash(h1, h2, i, mask);
                 let bit = 1u64 << (idx % 64);
                 let word = idx / 64;
-                let in_active =
-                    self.slots[a][word].load(AtomicOrdering::Relaxed) & bit != 0;
-                let in_inactive =
-                    self.slots[b][word].load(AtomicOrdering::Relaxed) & bit != 0;
+                let in_active = self.slots[a][word].load(AtomicOrdering::Relaxed) & bit != 0;
+                let in_inactive = self.slots[b][word].load(AtomicOrdering::Relaxed) & bit != 0;
                 if !in_active && !in_inactive {
                     return false;
                 }

@@ -13,5 +13,4 @@ pub trait EvictionPolicy: Send + Sync {
     /// `now_secs` é o timestamp coarse atual, passado para evitar chamadas
     /// redundantes ao relógio em loops de eviction.
     fn compute_score(&self, record: &CachedRecord, now_secs: u64) -> f64;
-
 }

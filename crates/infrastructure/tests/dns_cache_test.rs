@@ -19,8 +19,8 @@ fn create_refresh_cache(access_window_secs: u64) -> DnsCache {
         shard_amount: 4,
         access_window_secs,
         eviction_sample_size: 8,
-            lfuk_k_value: 0.5,
-            refresh_sample_rate: 1.0,
+        lfuk_k_value: 0.5,
+        refresh_sample_rate: 1.0,
     })
 }
 
@@ -53,8 +53,8 @@ fn create_cache(
         shard_amount: 4,
         access_window_secs: 7200,
         eviction_sample_size: 8,
-            lfuk_k_value: 0.5,
-            refresh_sample_rate: 1.0,
+        lfuk_k_value: 0.5,
+        refresh_sample_rate: 1.0,
     })
 }
 
@@ -518,8 +518,8 @@ fn test_lru_eviction_protects_recently_accessed_entry() {
         shard_amount: 4,
         access_window_secs: 7200,
         eviction_sample_size: 8,
-            lfuk_k_value: 0.5,
-            refresh_sample_rate: 1.0,
+        lfuk_k_value: 0.5,
+        refresh_sample_rate: 1.0,
     });
 
     // Inserir 3 entradas no tick T: last_access = T para todas
@@ -564,8 +564,8 @@ fn test_hit_rate_eviction_protects_high_hit_entries() {
         shard_amount: 4,
         access_window_secs: 7200,
         eviction_sample_size: 8,
-            lfuk_k_value: 0.5,
-            refresh_sample_rate: 1.0,
+        lfuk_k_value: 0.5,
+        refresh_sample_rate: 1.0,
     });
 
     cache.insert(
@@ -643,8 +643,8 @@ fn test_lfu_negative_score_below_min_frequency_leads_to_eviction() {
         shard_amount: 4,
         access_window_secs: 7200,
         eviction_sample_size: 8,
-            lfuk_k_value: 0.5,
-            refresh_sample_rate: 1.0,
+        lfuk_k_value: 0.5,
+        refresh_sample_rate: 1.0,
     });
 
     // Entradas com poucos hits (abaixo do min_frequency=5) têm score negativo
@@ -763,8 +763,8 @@ fn test_single_scan_evicts_exact_count() {
         shard_amount: 4,
         access_window_secs: 7200,
         eviction_sample_size: 8,
-            lfuk_k_value: 0.5,
-            refresh_sample_rate: 1.0,
+        lfuk_k_value: 0.5,
+        refresh_sample_rate: 1.0,
     });
 
     // Inserir max_entries entradas

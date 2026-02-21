@@ -11,7 +11,8 @@ impl DnsCache {
     /// populares expiradas sobrevivam até serem renovadas ou removidas por score baixo.
     pub fn compact(&self) -> usize {
         let before = self.cache.len();
-        self.cache.retain(|_, record| !record.is_marked_for_deletion());
+        self.cache
+            .retain(|_, record| !record.is_marked_for_deletion());
         let removed = before.saturating_sub(self.cache.len());
 
         if removed > 0 {

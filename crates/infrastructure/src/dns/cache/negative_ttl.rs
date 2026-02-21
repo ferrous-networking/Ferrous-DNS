@@ -54,16 +54,13 @@ impl NegativeQueryTracker {
         let now = coarse_now_secs();
         let entry_count = Arc::clone(&self.entry_count);
 
-        let mut entry = self
-            .query_counts
-            .entry(domain_arc)
-            .or_insert_with(|| {
-                entry_count.fetch_add(1, Ordering::Relaxed);
-                QueryCounter {
-                    count: AtomicU64::new(0),
-                    last_reset: now,
-                }
-            });
+        let mut entry = self.query_counts.entry(domain_arc).or_insert_with(|| {
+            entry_count.fetch_add(1, Ordering::Relaxed);
+            QueryCounter {
+                count: AtomicU64::new(0),
+                last_reset: now,
+            }
+        });
 
         if now.saturating_sub(entry.value().last_reset) >= self.window_secs {
             let old_count = entry.value().count.load(Ordering::Relaxed);

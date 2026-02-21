@@ -29,7 +29,10 @@ impl std::fmt::Debug for HotCounters {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HotCounters")
             .field("hit_count", &self.hit_count.load(AtomicOrdering::Relaxed))
-            .field("last_access", &self.last_access.load(AtomicOrdering::Relaxed))
+            .field(
+                "last_access",
+                &self.last_access.load(AtomicOrdering::Relaxed),
+            )
             .finish()
     }
 }
@@ -56,9 +59,7 @@ impl Clone for CachedRecord {
             expires_at_secs: self.expires_at_secs,
             inserted_at_secs: self.inserted_at_secs,
             counters: HotCounters {
-                hit_count: AtomicU64::new(
-                    self.counters.hit_count.load(AtomicOrdering::Relaxed),
-                ),
+                hit_count: AtomicU64::new(self.counters.hit_count.load(AtomicOrdering::Relaxed)),
                 last_access: AtomicU64::new(
                     self.counters.last_access.load(AtomicOrdering::Relaxed),
                 ),
