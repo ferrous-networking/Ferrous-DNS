@@ -665,37 +665,37 @@
                     </div>
                     <p style="font-size:13px;color:var(--text-secondary);margin:0 0 16px">Algorithm used to select which cache entries are removed when the cache reaches its size limit.</p>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-                        <div :style="config.dns.cache_eviction_strategy==='lru'?'border:2px solid var(--color-primary);background:rgba(59,130,246,0.05)':'border:1px solid var(--border-color);background:var(--bg-tertiary)'"
-                             style="border-radius:8px;padding:14px;cursor:pointer" @click="config.dns.cache_eviction_strategy='lru'">
-                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <div :style="config.dns.cache_eviction_strategy==='lru'?'border:2px solid #10B981;background:rgba(16,185,129,0.07)':'border:1px solid var(--border-color);background:var(--bg-tertiary)'"
+                             style="border-radius:16px;padding:18px;cursor:pointer" @click="config.dns.cache_eviction_strategy='lru'">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                                 <i data-lucide="clock-3" style="width:16px;height:16px;color:#F59E0B"></i>
                                 <span style="font-size:13px;font-weight:600">LRU — Least Recently Used</span>
                             </div>
-                            <p style="font-size:12px;color:var(--text-secondary);margin:0">Removes the entry that was accessed least recently. Simple and predictable — entries not queried for a while are first to go. Well suited for workloads where recent access reliably predicts future demand.</p>
+                            <p style="font-size:12px;color:var(--text-secondary);margin:0;line-height:1.5">Removes the entry that was accessed least recently. Simple and predictable — entries not queried for a while are first to go. Well suited for workloads where recent access reliably predicts future demand.</p>
                         </div>
-                        <div :style="config.dns.cache_eviction_strategy==='lfu'?'border:2px solid var(--color-primary);background:rgba(59,130,246,0.05)':'border:1px solid var(--border-color);background:var(--bg-tertiary)'"
-                             style="border-radius:8px;padding:14px;cursor:pointer" @click="config.dns.cache_eviction_strategy='lfu'">
-                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <div :style="config.dns.cache_eviction_strategy==='lfu'?'border:2px solid #10B981;background:rgba(16,185,129,0.07)':'border:1px solid var(--border-color);background:var(--bg-tertiary)'"
+                             style="border-radius:16px;padding:18px;cursor:pointer" @click="config.dns.cache_eviction_strategy='lfu'">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                                 <i data-lucide="bar-chart" style="width:16px;height:16px;color:#A855F7"></i>
                                 <span style="font-size:13px;font-weight:600">LFU — Least Frequently Used</span>
                             </div>
-                            <p style="font-size:12px;color:var(--text-secondary);margin:0">Removes entries with the lowest total hit count. Keeps the most-queried domains in cache indefinitely. May cause cache pollution where old popular entries crowd out newer, more relevant ones.</p>
+                            <p style="font-size:12px;color:var(--text-secondary);margin:0;line-height:1.5">Removes entries with the lowest total hit count. Keeps the most-queried domains in cache indefinitely. May cause cache pollution where old popular entries crowd out newer, more relevant ones.</p>
                         </div>
-                        <div :style="config.dns.cache_eviction_strategy==='lfu-k'?'border:2px solid var(--color-primary);background:rgba(59,130,246,0.05)':'border:1px solid var(--border-color);background:var(--bg-tertiary)'"
-                             style="border-radius:8px;padding:14px;cursor:pointer" @click="config.dns.cache_eviction_strategy='lfu-k'">
-                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <div :style="config.dns.cache_eviction_strategy==='lfu-k'?'border:2px solid #10B981;background:rgba(16,185,129,0.07)':'border:1px solid var(--border-color);background:var(--bg-tertiary)'"
+                             style="border-radius:16px;padding:18px;cursor:pointer" @click="config.dns.cache_eviction_strategy='lfu-k'">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                                 <i data-lucide="activity" style="width:16px;height:16px;color:#3B82F6"></i>
                                 <span style="font-size:13px;font-weight:600">LFU-K — Adaptive</span>
                             </div>
-                            <p style="font-size:12px;color:var(--text-secondary);margin:0">Uses the K most recent access timestamps to compute frequency, making it responsive to shifting access patterns. Balances LFU's popularity bias with LRU's recency awareness for adaptive workloads.</p>
+                            <p style="font-size:12px;color:var(--text-secondary);margin:0;line-height:1.5">Uses the K most recent access timestamps to compute frequency, making it responsive to shifting access patterns. Balances LFU's popularity bias with LRU's recency awareness for adaptive workloads.</p>
                         </div>
-                        <div :style="config.dns.cache_eviction_strategy==='hit_rate'?'border:2px solid var(--color-primary);background:rgba(59,130,246,0.05)':'border:1px solid var(--border-color);background:var(--bg-tertiary)'"
-                             style="border-radius:8px;padding:14px;cursor:pointer" @click="config.dns.cache_eviction_strategy='hit_rate'">
-                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <div :style="config.dns.cache_eviction_strategy==='hit_rate'?'border:2px solid #10B981;background:rgba(16,185,129,0.07)':'border:1px solid var(--border-color);background:var(--bg-tertiary)'"
+                             style="border-radius:16px;padding:18px;cursor:pointer" @click="config.dns.cache_eviction_strategy='hit_rate'">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                                 <i data-lucide="target" style="width:16px;height:16px;color:#10B981"></i>
                                 <span style="font-size:13px;font-weight:600">Hit Rate Based &nbsp;<span style="font-size:11px;color:#10B981;font-weight:500">(recommended)</span></span>
                             </div>
-                            <p style="font-size:12px;color:var(--text-secondary);margin:0">Scores entries by hits relative to their TTL. A frequently queried short-TTL record scores higher than one with equal hits but a longer TTL. Ideal for DNS — correctly values CDN and dynamic records that matter most.</p>
+                            <p style="font-size:12px;color:var(--text-secondary);margin:0;line-height:1.5">Scores entries by hits relative to their TTL. A frequently queried short-TTL record scores higher than one with equal hits but a longer TTL. Ideal for DNS — correctly values CDN and dynamic records that matter most.</p>
                         </div>
                     </div>
                 </div>
@@ -715,45 +715,51 @@
                     </div>
                 </div>
 
-                <div x-show="config.dns.cache_optimistic_refresh" style="display:flex;align-items:flex-start;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-color)">
-                    <div style="flex:1;margin-right:32px">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                            <i data-lucide="gauge" style="width:20px;height:20px;color:var(--color-primary)"></i>
-                            <h4 style="font-size:16px;font-weight:600;margin:0">Refresh Threshold</h4>
+                <div x-show="config.dns.cache_optimistic_refresh">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-color)">
+                        <div style="flex:1;margin-right:32px">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                <i data-lucide="gauge" style="width:20px;height:20px;color:var(--color-primary)"></i>
+                                <h4 style="font-size:16px;font-weight:600;margin:0">Refresh Threshold</h4>
+                            </div>
+                            <p style="font-size:13px;color:var(--text-secondary);margin:0">Fraction of a cache entry's TTL that must have elapsed before a background refresh is triggered. A value of <code style="padding:1px 4px;background:var(--bg-tertiary);border-radius:3px">0.75</code> means the entry is refreshed when 75% of its TTL has passed.</p>
                         </div>
-                        <p style="font-size:13px;color:var(--text-secondary);margin:0">Fraction of a cache entry's TTL that must have elapsed before a background refresh is triggered. A value of <code style="padding:1px 4px;background:var(--bg-tertiary);border-radius:3px">0.75</code> means the entry is refreshed when 75% of its TTL has passed.</p>
-                    </div>
-                    <div style="flex-shrink:0;width:150px">
-                        <input type="number" x-model.number="config.dns.cache_refresh_threshold" step="0.05" min="0.1" max="0.99" style="width:100%;text-align:right">
-                        <p style="font-size:11px;color:var(--text-tertiary);margin:4px 0 0;text-align:right">0.1 – 0.99</p>
+                        <div style="flex-shrink:0;width:150px">
+                            <input type="number" x-model.number="config.dns.cache_refresh_threshold" step="0.05" min="0.1" max="0.99" style="width:100%;text-align:right">
+                            <p style="font-size:11px;color:var(--text-tertiary);margin:4px 0 0;text-align:right">0.1 – 0.99</p>
+                        </div>
                     </div>
                 </div>
 
-                <div x-show="config.dns.cache_optimistic_refresh" style="display:flex;align-items:flex-start;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-color)">
-                    <div style="flex:1;margin-right:32px">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                            <i data-lucide="bar-chart-2" style="width:20px;height:20px;color:var(--color-primary)"></i>
-                            <h4 style="font-size:16px;font-weight:600;margin:0">Minimum Hit Rate</h4>
+                <div x-show="config.dns.cache_optimistic_refresh">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-color)">
+                        <div style="flex:1;margin-right:32px">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                <i data-lucide="bar-chart-2" style="width:20px;height:20px;color:var(--color-primary)"></i>
+                                <h4 style="font-size:16px;font-weight:600;margin:0">Minimum Hit Rate</h4>
+                            </div>
+                            <p style="font-size:13px;color:var(--text-secondary);margin:0">Minimum cache hits per minute an entry must receive to qualify for optimistic refresh. Entries accessed less frequently are allowed to expire normally and are only re-fetched on the next client request.</p>
                         </div>
-                        <p style="font-size:13px;color:var(--text-secondary);margin:0">Minimum cache hits per minute an entry must receive to qualify for optimistic refresh. Entries accessed less frequently are allowed to expire normally and are only re-fetched on the next client request.</p>
-                    </div>
-                    <div style="flex-shrink:0;width:150px">
-                        <input type="number" x-model.number="config.dns.cache_min_hit_rate" step="0.1" min="0" style="width:100%;text-align:right">
-                        <p style="font-size:11px;color:var(--text-tertiary);margin:4px 0 0;text-align:right">hits / min</p>
+                        <div style="flex-shrink:0;width:150px">
+                            <input type="number" x-model.number="config.dns.cache_min_hit_rate" step="0.1" min="0" style="width:100%;text-align:right">
+                            <p style="font-size:11px;color:var(--text-tertiary);margin:4px 0 0;text-align:right">hits / min</p>
+                        </div>
                     </div>
                 </div>
 
-                <div x-show="config.dns.cache_optimistic_refresh" style="display:flex;align-items:flex-start;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-color)">
-                    <div style="flex:1;margin-right:32px">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                            <i data-lucide="hash" style="width:20px;height:20px;color:var(--color-primary)"></i>
-                            <h4 style="font-size:16px;font-weight:600;margin:0">Minimum Frequency</h4>
+                <div x-show="config.dns.cache_optimistic_refresh">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-color)">
+                        <div style="flex:1;margin-right:32px">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                <i data-lucide="hash" style="width:20px;height:20px;color:var(--color-primary)"></i>
+                                <h4 style="font-size:16px;font-weight:600;margin:0">Minimum Frequency</h4>
+                            </div>
+                            <p style="font-size:13px;color:var(--text-secondary);margin:0">Minimum total number of hits an entry must accumulate before it is eligible for optimistic refresh. Prevents very recently added entries from being immediately scheduled for background re-fetches.</p>
                         </div>
-                        <p style="font-size:13px;color:var(--text-secondary);margin:0">Minimum total number of hits an entry must accumulate before it is eligible for optimistic refresh. Prevents very recently added entries from being immediately scheduled for background re-fetches.</p>
-                    </div>
-                    <div style="flex-shrink:0;width:150px">
-                        <input type="number" x-model.number="config.dns.cache_min_frequency" min="1" style="width:100%;text-align:right">
-                        <p style="font-size:11px;color:var(--text-tertiary);margin:4px 0 0;text-align:right">total hits</p>
+                        <div style="flex-shrink:0;width:150px">
+                            <input type="number" x-model.number="config.dns.cache_min_frequency" min="1" style="width:100%;text-align:right">
+                            <p style="font-size:11px;color:var(--text-tertiary);margin:4px 0 0;text-align:right">total hits</p>
+                        </div>
                     </div>
                 </div>
 
