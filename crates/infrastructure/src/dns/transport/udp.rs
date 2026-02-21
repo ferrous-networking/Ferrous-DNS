@@ -8,7 +8,7 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 use tracing::{debug, warn};
 
-fn validate_response_id(
+pub fn validate_response_id(
     query_bytes: &[u8],
     response_bytes: &[u8],
     server: SocketAddr,
@@ -218,10 +218,6 @@ impl UdpTransport {
         })
     }
 }
-
-#[cfg(test)]
-#[path = "udp_test.rs"]
-mod tests;
 
 #[async_trait]
 impl DnsTransport for UdpTransport {
