@@ -118,25 +118,12 @@ impl CachedResolver {
             }
         }
     }
-}
 
-#[async_trait]
-impl DnsResolver for CachedResolver {
-    fn try_cache(&self, query: &DnsQuery) -> Option<DnsResolution> {
-        self.check_cache(query)
-    }
-
-    async fn resolve(&self, query: &DnsQuery) -> Result<DnsResolution, DomainError> {
-        if let Some(cached) = self.check_cache(query) {
-            if cached.addresses.is_empty() {
-                return Err(DomainError::NxDomain);
-            }
-            return Ok(cached);
-        }
-
-        let key = CacheKey::new(query.domain.as_ref(), query.record_type);
-
-        let (is_leader, mut rx) = match self.inflight.entry(key.clone()) {
+    fn register_or_join_inflight(
+        &self,
+        key: &CacheKey,
+    ) -> (bool, watch::Receiver<Option<Arc<DnsResolution>>>) {
+        match self.inflight.entry(key.clone()) {
             dashmap::Entry::Occupied(e) => {
                 let rx = e.get().subscribe();
                 drop(e);
@@ -147,26 +134,15 @@ impl DnsResolver for CachedResolver {
                 e.insert(Arc::new(tx));
                 (true, rx)
             }
-        };
+        }
+    }
 
-        if !is_leader {
-            // Happy path: leader sent the result before closing the channel.
-            if let Ok(()) = rx.changed().await {
-                if let Some(arc_res) = rx.borrow().clone() {
-                    return Ok(DnsResolution {
-                        addresses: Arc::clone(&arc_res.addresses),
-                        cache_hit: false, // follower waited for upstream resolution, not a cache read
-                        dnssec_status: arc_res.dnssec_status,
-                        cname: None,
-                        upstream_server: None,
-                        min_ttl: arc_res.min_ttl,
-                        authority_records: vec![],
-                    });
-                }
-            }
-
-            // Unified fallback (Err = channel closed, or Ok but borrow is None):
-            // 1. The leader may have sent before we subscribed — the value is still readable via borrow().
+    async fn resolve_as_follower(
+        &self,
+        query: &DnsQuery,
+        mut rx: watch::Receiver<Option<Arc<DnsResolution>>>,
+    ) -> Result<DnsResolution, DomainError> {
+        if let Ok(()) = rx.changed().await {
             if let Some(arc_res) = rx.borrow().clone() {
                 return Ok(DnsResolution {
                     addresses: Arc::clone(&arc_res.addresses),
@@ -178,26 +154,42 @@ impl DnsResolver for CachedResolver {
                     authority_records: vec![],
                 });
             }
+        }
 
-            // 2. Cache: leader may have stored a result or NegativeResponse.
-            if let Some(cached) = self.check_cache(query) {
-                return if cached.addresses.is_empty() {
-                    Err(DomainError::NxDomain)
-                } else {
-                    Ok(cached)
-                };
-            }
+        if let Some(arc_res) = rx.borrow().clone() {
+            return Ok(DnsResolution {
+                addresses: Arc::clone(&arc_res.addresses),
+                cache_hit: false,
+                dnssec_status: arc_res.dnssec_status,
+                cname: None,
+                upstream_server: None,
+                min_ttl: arc_res.min_ttl,
+                authority_records: vec![],
+            });
+        }
 
-            // 3. Last resort: leader failed (timeout, SERVFAIL) and cache is empty.
-            return match self.inner.resolve(query).await {
-                Ok(r) => {
-                    self.store_in_cache(query, &r);
-                    Ok(r)
-                }
-                Err(e) => Err(e),
+        if let Some(cached) = self.check_cache(query) {
+            return if cached.addresses.is_empty() {
+                Err(DomainError::NxDomain)
+            } else {
+                Ok(cached)
             };
         }
 
+        match self.inner.resolve(query).await {
+            Ok(r) => {
+                self.store_in_cache(query, &r);
+                Ok(r)
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn resolve_as_leader(
+        &self,
+        query: &DnsQuery,
+        key: CacheKey,
+    ) -> Result<DnsResolution, DomainError> {
         debug!(
             domain = %query.domain,
             record_type = %query.record_type,
@@ -220,5 +212,31 @@ impl DnsResolver for CachedResolver {
         }
 
         result
+    }
+}
+
+#[async_trait]
+impl DnsResolver for CachedResolver {
+    fn try_cache(&self, query: &DnsQuery) -> Option<DnsResolution> {
+        self.check_cache(query)
+    }
+
+    async fn resolve(&self, query: &DnsQuery) -> Result<DnsResolution, DomainError> {
+        if let Some(cached) = self.check_cache(query) {
+            return if cached.addresses.is_empty() {
+                Err(DomainError::NxDomain)
+            } else {
+                Ok(cached)
+            };
+        }
+
+        let key = CacheKey::new(query.domain.as_ref(), query.record_type);
+        let (is_leader, rx) = self.register_or_join_inflight(&key);
+
+        if !is_leader {
+            return self.resolve_as_follower(query, rx).await;
+        }
+
+        self.resolve_as_leader(query, key).await
     }
 }
