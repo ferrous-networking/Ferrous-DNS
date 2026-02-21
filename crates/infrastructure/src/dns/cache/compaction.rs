@@ -10,18 +10,9 @@ impl DnsCache {
     /// urgente quando dentro da `access_window`. Isso permite que entradas
     /// populares expiradas sobrevivam até serem renovadas ou removidas por score baixo.
     pub fn compact(&self) -> usize {
-        let to_remove: Vec<super::key::CacheKey> = self
-            .cache
-            .iter()
-            .filter(|e| e.value().is_marked_for_deletion())
-            .map(|e| e.key().clone())
-            .collect();
-
-        let removed = to_remove.len();
-
-        for key in to_remove {
-            self.cache.remove(&key);
-        }
+        let before = self.cache.len();
+        self.cache.retain(|_, record| !record.is_marked_for_deletion());
+        let removed = before.saturating_sub(self.cache.len());
 
         if removed > 0 {
             self.metrics
