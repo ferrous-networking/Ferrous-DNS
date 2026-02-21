@@ -8,6 +8,34 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 use tracing::{debug, warn};
 
+fn validate_response_id(
+    query_bytes: &[u8],
+    response_bytes: &[u8],
+    server: SocketAddr,
+) -> Result<(), DomainError> {
+    if query_bytes.len() < 2 || response_bytes.len() < 2 {
+        return Err(DomainError::InvalidDomainName(format!(
+            "DNS response from {} is too short to contain a message ID",
+            server
+        )));
+    }
+    let query_id = u16::from_be_bytes([query_bytes[0], query_bytes[1]]);
+    let response_id = u16::from_be_bytes([response_bytes[0], response_bytes[1]]);
+    if query_id != response_id {
+        warn!(
+            server = %server,
+            query_id,
+            response_id,
+            "DNS message ID mismatch — discarding response to prevent spoofing"
+        );
+        return Err(DomainError::InvalidDomainName(format!(
+            "DNS message ID mismatch from {}: expected {}, got {}",
+            server, query_id, response_id
+        )));
+    }
+    Ok(())
+}
+
 const MAX_UDP_RESPONSE_SIZE: usize = 4096;
 
 pub struct UdpTransport {
@@ -91,6 +119,8 @@ impl UdpTransport {
                 );
             }
 
+            validate_response_id(message_bytes, &recv_buf[..bytes_received], self.server_addr)?;
+
             debug!(
                 server = %self.server_addr,
                 bytes_received = bytes_received,
@@ -171,6 +201,8 @@ impl UdpTransport {
             );
         }
 
+        validate_response_id(message_bytes, &recv_buf[..bytes_received], self.server_addr)?;
+
         debug!(
             server = %self.server_addr,
             bytes_received = bytes_received,
@@ -182,6 +214,50 @@ impl UdpTransport {
             bytes: bytes::Bytes::copy_from_slice(&recv_buf[..bytes_received]),
             protocol_used: "UDP",
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn addr() -> SocketAddr {
+        "8.8.8.8:53".parse().unwrap()
+    }
+
+    #[test]
+    fn test_validate_response_id_matching_ids_ok() {
+        let query = [0xAB, 0xCD, 0x01, 0x00]; // ID = 0xABCD
+        let response = [0xAB, 0xCD, 0x81, 0x80]; // same ID
+        assert!(validate_response_id(&query, &response, addr()).is_ok());
+    }
+
+    #[test]
+    fn test_validate_response_id_mismatch_returns_error() {
+        let query = [0xAB, 0xCD, 0x01, 0x00]; // ID = 0xABCD
+        let response = [0x12, 0x34, 0x81, 0x80]; // wrong ID = 0x1234
+        let result = validate_response_id(&query, &response, addr());
+        assert!(result.is_err(), "Mismatched DNS IDs must return an error");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("mismatch"),
+            "Error message should mention mismatch: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn test_validate_response_id_short_query_returns_error() {
+        let query = [0xAB]; // only 1 byte — too short
+        let response = [0xAB, 0xCD, 0x81, 0x80];
+        assert!(validate_response_id(&query, &response, addr()).is_err());
+    }
+
+    #[test]
+    fn test_validate_response_id_short_response_returns_error() {
+        let query = [0xAB, 0xCD, 0x01, 0x00];
+        let response = [0xAB]; // only 1 byte — too short
+        assert!(validate_response_id(&query, &response, addr()).is_err());
     }
 }
 
