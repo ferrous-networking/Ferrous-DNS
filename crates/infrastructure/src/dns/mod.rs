@@ -1,5 +1,7 @@
 pub mod block_filter;
 pub mod cache;
+pub mod fast_path;
+pub mod wire_response;
 pub mod cache_updater;
 pub mod cache_warming;
 pub mod conditional_forwarder;
