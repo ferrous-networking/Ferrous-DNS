@@ -25,6 +25,7 @@ pub struct DnsCacheConfig {
     pub access_window_secs: u64,
     pub eviction_sample_size: usize,
     pub lfuk_k_value: f64,
+    pub refresh_sample_rate: f64,
 }
 
 pub struct DnsCache {
@@ -41,6 +42,7 @@ pub struct DnsCache {
     pub(super) bloom: Arc<AtomicBloom>,
     pub(super) access_window_secs: u64,
     pub(super) eviction_sample_size: usize,
+    pub(super) refresh_sample_period: u64,
     pub(super) negative: NegativeDnsCache,
     pub(crate) eviction_pending: AtomicBool,
 }
@@ -84,6 +86,10 @@ impl DnsCache {
             bloom: Arc::new(bloom),
             access_window_secs: config.access_window_secs,
             eviction_sample_size: config.eviction_sample_size.max(1),
+            refresh_sample_period: {
+                let r = config.refresh_sample_rate.clamp(0.001, 1.0);
+                (1.0 / r).ceil() as u64
+            },
             negative: NegativeDnsCache::new(config.max_entries),
             eviction_pending: AtomicBool::new(false),
         }
@@ -378,8 +384,8 @@ impl DnsCache {
         let now_secs = coarse_now_secs();
         let total_to_sample = count * self.eviction_sample_size;
 
-        let mut urgent_expired: Vec<CacheKey> = Vec::new();
-        let mut scored: Vec<(CacheKey, f64)> = Vec::new();
+        let mut urgent_expired: Vec<CacheKey> = Vec::with_capacity(count);
+        let mut scored: Vec<(CacheKey, f64)> = Vec::with_capacity(total_to_sample);
         let mut sampled = 0usize;
 
         for entry in self.cache.iter() {

@@ -71,6 +71,7 @@ mod tests {
             access_window_secs,
             eviction_sample_size: 8,
             lfuk_k_value: 0.5,
+            refresh_sample_rate: 1.0,
         })
     }
 

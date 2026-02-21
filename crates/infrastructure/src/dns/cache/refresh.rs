@@ -22,10 +22,16 @@ impl DnsCache {
     /// Entradas **fora da janela** não recebem refresh proativo. O próximo acesso
     /// atualiza `last_access` via `record_hit()`, re-inserindo-as na janela.
     pub fn get_refresh_candidates(&self) -> Vec<(CompactString, RecordType)> {
-        let mut candidates = Vec::new();
+        let mut candidates = Vec::with_capacity(16);
         let now = coarse_now_secs();
+        let sample_period = self.refresh_sample_period;
+        let mut idx: u64 = 0;
 
         for entry in self.cache.iter() {
+            idx += 1;
+            if sample_period > 1 && !idx.is_multiple_of(sample_period) {
+                continue;
+            }
             let record = entry.value();
 
             // Lazy-deleted entries never get refreshed
@@ -101,6 +107,7 @@ mod tests {
             access_window_secs,
             eviction_sample_size: 8,
             lfuk_k_value: 0.5,
+            refresh_sample_rate: 1.0,
         })
     }
 

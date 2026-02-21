@@ -65,6 +65,7 @@ fn make_cache() -> Arc<DnsCache> {
         access_window_secs: 7200,
         eviction_sample_size: 8,
             lfuk_k_value: 0.5,
+            refresh_sample_rate: 1.0,
     }))
 }
 
