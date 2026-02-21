@@ -1,4 +1,4 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
 use ferrous_dns_domain::{BlockSource, DnsProtocol, DnsRecord, QueryLog, QuerySource, RecordType};
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
@@ -57,7 +57,6 @@ impl QueryLogBuilder {
     }
 
     pub fn block_source(mut self, src: BlockSource) -> Self {
-        // We need to store block_source — add the field via the build method
         self.block_source = Some(src);
         self
     }

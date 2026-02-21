@@ -15,8 +15,7 @@ use ferrous_dns_domain::Config;
 use ferrous_dns_infrastructure::{
     dns::{cache::DnsCache, HickoryDnsResolver},
     repositories::{
-        client_repository::SqliteClientRepository,
-        query_log_repository::SqliteQueryLogRepository,
+        client_repository::SqliteClientRepository, query_log_repository::SqliteQueryLogRepository,
         regex_filter_repository::SqliteRegexFilterRepository,
     },
 };
@@ -189,7 +188,8 @@ async fn create_test_app(pool: sqlx::SqlitePool) -> Router {
         weight: None,
     };
     let pool_manager = Arc::new(
-        PoolManager::new(vec![test_pool], None, event_emitter).expect("Failed to create PoolManager"),
+        PoolManager::new(vec![test_pool], None, event_emitter)
+            .expect("Failed to create PoolManager"),
     );
 
     let state = AppState {

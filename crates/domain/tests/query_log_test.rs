@@ -13,12 +13,14 @@ fn test_query_stats_default_source_fields() {
 
 #[test]
 fn test_query_stats_source_fields_not_altered_by_analytics() {
-    let mut stats = QueryStats::default();
-    stats.queries_cache_hits = 10;
-    stats.queries_upstream = 20;
-    stats.queries_blocked_by_blocklist = 5;
-    stats.queries_blocked_by_managed_domain = 3;
-    stats.queries_blocked_by_regex_filter = 2;
+    let stats = QueryStats {
+        queries_cache_hits: 10,
+        queries_upstream: 20,
+        queries_blocked_by_blocklist: 5,
+        queries_blocked_by_managed_domain: 3,
+        queries_blocked_by_regex_filter: 2,
+        ..Default::default()
+    };
 
     let mut by_type = HashMap::new();
     by_type.insert(RecordType::A, 100u64);

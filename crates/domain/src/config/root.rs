@@ -132,19 +132,47 @@ impl Config {
 
         // [server]
         if let Some(t) = doc.get_mut("server").and_then(|i| i.as_table_mut()) {
-            set_val(t, "dns_port", toml_edit::Value::from(self.server.dns_port as i64));
-            set_val(t, "web_port", toml_edit::Value::from(self.server.web_port as i64));
-            set_val(t, "bind_address", toml_edit::Value::from(self.server.bind_address.clone()));
+            set_val(
+                t,
+                "dns_port",
+                toml_edit::Value::from(self.server.dns_port as i64),
+            );
+            set_val(
+                t,
+                "web_port",
+                toml_edit::Value::from(self.server.web_port as i64),
+            );
+            set_val(
+                t,
+                "bind_address",
+                toml_edit::Value::from(self.server.bind_address.clone()),
+            );
         }
 
         // [dns] - scalar fields only; pools/conditional_forwarding/local_records left untouched
         if let Some(dns_item) = doc.get_mut("dns") {
             if let Some(t) = dns_item.as_table_mut() {
                 set_val(t, "upstream_servers", str_array(&self.dns.upstream_servers));
-                set_val(t, "query_timeout", toml_edit::Value::from(self.dns.query_timeout as i64));
-                set_val(t, "cache_enabled", toml_edit::Value::from(self.dns.cache_enabled));
-                set_val(t, "cache_ttl", toml_edit::Value::from(self.dns.cache_ttl as i64));
-                set_val(t, "dnssec_enabled", toml_edit::Value::from(self.dns.dnssec_enabled));
+                set_val(
+                    t,
+                    "query_timeout",
+                    toml_edit::Value::from(self.dns.query_timeout as i64),
+                );
+                set_val(
+                    t,
+                    "cache_enabled",
+                    toml_edit::Value::from(self.dns.cache_enabled),
+                );
+                set_val(
+                    t,
+                    "cache_ttl",
+                    toml_edit::Value::from(self.dns.cache_ttl as i64),
+                );
+                set_val(
+                    t,
+                    "dnssec_enabled",
+                    toml_edit::Value::from(self.dns.dnssec_enabled),
+                );
                 set_val(
                     t,
                     "default_strategy",
@@ -210,16 +238,32 @@ impl Config {
                     "cache_access_window_secs",
                     toml_edit::Value::from(self.dns.cache_access_window_secs as i64),
                 );
-                set_val(t, "block_private_ptr", toml_edit::Value::from(self.dns.block_private_ptr));
-                set_val(t, "block_non_fqdn", toml_edit::Value::from(self.dns.block_non_fqdn));
+                set_val(
+                    t,
+                    "block_private_ptr",
+                    toml_edit::Value::from(self.dns.block_private_ptr),
+                );
+                set_val(
+                    t,
+                    "block_non_fqdn",
+                    toml_edit::Value::from(self.dns.block_non_fqdn),
+                );
                 if let Some(ref domain) = self.dns.local_domain {
                     set_val(t, "local_domain", toml_edit::Value::from(domain.clone()));
                 }
 
                 // [dns.health_check]
                 if let Some(hc) = t.get_mut("health_check").and_then(|i| i.as_table_mut()) {
-                    set_val(hc, "interval", toml_edit::Value::from(self.dns.health_check.interval as i64));
-                    set_val(hc, "timeout", toml_edit::Value::from(self.dns.health_check.timeout as i64));
+                    set_val(
+                        hc,
+                        "interval",
+                        toml_edit::Value::from(self.dns.health_check.interval as i64),
+                    );
+                    set_val(
+                        hc,
+                        "timeout",
+                        toml_edit::Value::from(self.dns.health_check.timeout as i64),
+                    );
                     set_val(
                         hc,
                         "failure_threshold",
@@ -237,19 +281,35 @@ impl Config {
         // [blocking]
         if let Some(t) = doc.get_mut("blocking").and_then(|i| i.as_table_mut()) {
             set_val(t, "enabled", toml_edit::Value::from(self.blocking.enabled));
-            set_val(t, "custom_blocked", str_array(&self.blocking.custom_blocked));
+            set_val(
+                t,
+                "custom_blocked",
+                str_array(&self.blocking.custom_blocked),
+            );
             set_val(t, "whitelist", str_array(&self.blocking.whitelist));
         }
 
         // [logging]
         if let Some(t) = doc.get_mut("logging").and_then(|i| i.as_table_mut()) {
-            set_val(t, "level", toml_edit::Value::from(self.logging.level.clone()));
+            set_val(
+                t,
+                "level",
+                toml_edit::Value::from(self.logging.level.clone()),
+            );
         }
 
         // [database]
         if let Some(t) = doc.get_mut("database").and_then(|i| i.as_table_mut()) {
-            set_val(t, "path", toml_edit::Value::from(self.database.path.clone()));
-            set_val(t, "log_queries", toml_edit::Value::from(self.database.log_queries));
+            set_val(
+                t,
+                "path",
+                toml_edit::Value::from(self.database.path.clone()),
+            );
+            set_val(
+                t,
+                "log_queries",
+                toml_edit::Value::from(self.database.log_queries),
+            );
             set_val(
                 t,
                 "queries_log_stored",

@@ -96,7 +96,6 @@ pub struct QueryStats {
     pub avg_cache_time_ms: f64,
     pub avg_upstream_time_ms: f64,
 
-    // Contagem por fonte (24h, sem limite de amostragem)
     pub queries_cache_hits: u64,
     pub queries_upstream: u64,
     pub queries_blocked_by_blocklist: u64,

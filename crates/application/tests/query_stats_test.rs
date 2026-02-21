@@ -34,7 +34,7 @@ async fn test_get_recent_queries_empty() {
     let repository_mock = Arc::new(MockQueryLogRepository::new());
 
     let use_case = GetRecentQueriesUseCase::new(
-        repository_mock.clone() as Arc<dyn ferrous_dns_application::ports::QueryLogRepository>,
+        repository_mock.clone() as Arc<dyn ferrous_dns_application::ports::QueryLogRepository>
     );
 
     let result = use_case.execute(10, 24.0).await;
@@ -47,7 +47,7 @@ async fn test_get_stats_empty() {
     let repository_mock = Arc::new(MockQueryLogRepository::new());
 
     let use_case = GetQueryStatsUseCase::new(
-        repository_mock.clone() as Arc<dyn ferrous_dns_application::ports::QueryLogRepository>,
+        repository_mock.clone() as Arc<dyn ferrous_dns_application::ports::QueryLogRepository>
     );
 
     let result = use_case.execute(24.0).await;
@@ -68,7 +68,7 @@ async fn test_get_stats_with_cache_and_upstream() {
     }
 
     let use_case = GetQueryStatsUseCase::new(
-        repo.clone() as Arc<dyn ferrous_dns_application::ports::QueryLogRepository>,
+        repo.clone() as Arc<dyn ferrous_dns_application::ports::QueryLogRepository>
     );
     let stats = use_case.execute(24.0).await.unwrap();
 
@@ -96,7 +96,7 @@ async fn test_get_stats_blocked_sources() {
         .unwrap();
 
     let use_case = GetQueryStatsUseCase::new(
-        repo.clone() as Arc<dyn ferrous_dns_application::ports::QueryLogRepository>,
+        repo.clone() as Arc<dyn ferrous_dns_application::ports::QueryLogRepository>
     );
     let stats = use_case.execute(24.0).await.unwrap();
 

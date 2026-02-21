@@ -54,11 +54,18 @@ domain = "lan"         # Queries for this domain are forwarded to the specified 
 server = "10.0.0.1:53" # DNS server to forward matching queries to
 
 [[dns.local_records]]
-hostname = "viudes"    # Hostname (without domain) for this local record
-domain = "local"       # Domain suffix; full name will be hostname.domain
-ip = "10.0.10.1"       # IP address to resolve to
-record_type = "A"      # DNS record type: "A" (IPv4) or "AAAA" (IPv6)
-ttl = 300              # TTL (seconds) returned to clients for this record
+hostname = "viudes"
+domain = "local"
+ip = "10.0.10.1"
+record_type = "A"
+ttl = 300
+
+[[dns.local_records]]
+hostname = "kakarot"
+domain = "server"
+ip = "10.0.1.1"
+record_type = "A"
+ttl = 300
 
 [blocking]
 enabled = true         # Enable DNS-based ad/malware blocking
