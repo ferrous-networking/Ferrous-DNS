@@ -14,9 +14,8 @@ fn make_chain_verifier() -> ChainVerifier {
         servers: vec!["udp://127.0.0.1:5353".into()],
         weight: None,
     };
-    let pm = Arc::new(
-        PoolManager::new(vec![pool], None, QueryEventEmitter::new_disabled()).unwrap(),
-    );
+    let pm =
+        Arc::new(PoolManager::new(vec![pool], None, QueryEventEmitter::new_disabled()).unwrap());
     ChainVerifier::new(pm, TrustAnchorStore::empty(), Arc::new(DnssecCache::new()))
 }
 
@@ -63,8 +62,14 @@ fn test_get_zone_keys_returns_ksk_and_zsk_after_rrsig_verification() {
 
     let stored = verifier.get_zone_keys("example.com.").unwrap();
     assert_eq!(stored.len(), 2);
-    assert!(stored.iter().any(|k| k.flags == 257), "KSK should be stored");
-    assert!(stored.iter().any(|k| k.flags == 256), "ZSK should be stored");
+    assert!(
+        stored.iter().any(|k| k.flags == 257),
+        "KSK should be stored"
+    );
+    assert!(
+        stored.iter().any(|k| k.flags == 256),
+        "ZSK should be stored"
+    );
 }
 
 #[test]

@@ -14,7 +14,6 @@ pub enum ActiveEvictionPolicy {
 }
 
 impl ActiveEvictionPolicy {
-
     pub fn from_config(
         strategy: EvictionStrategy,
         min_frequency: u64,
@@ -31,7 +30,6 @@ impl ActiveEvictionPolicy {
             }),
         }
     }
-
 
     #[inline(always)]
     pub fn compute_score(&self, record: &CachedRecord, now_secs: u64) -> f64 {

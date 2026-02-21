@@ -5,7 +5,6 @@ use ferrous_dns_domain::RecordType;
 use std::sync::atomic::Ordering as AtomicOrdering;
 
 impl DnsCache {
-
     pub fn get_refresh_candidates(&self) -> Vec<(CompactString, RecordType)> {
         let mut candidates = Vec::with_capacity(16);
         let now = coarse_now_secs();

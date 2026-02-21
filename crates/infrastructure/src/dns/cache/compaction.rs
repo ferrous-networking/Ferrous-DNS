@@ -3,7 +3,6 @@ use std::sync::atomic::Ordering as AtomicOrdering;
 use tracing::debug;
 
 impl DnsCache {
-
     pub fn compact(&self) -> usize {
         let before = self.cache.len();
         self.cache

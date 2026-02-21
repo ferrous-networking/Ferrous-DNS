@@ -86,7 +86,6 @@ impl AtomicBloom {
         }
     }
 
-
     pub fn rotate(&self) {
         let old_active = self.active.load(AtomicOrdering::Relaxed);
         let new_active = 1 - old_active;

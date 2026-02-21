@@ -459,7 +459,6 @@ impl DnsCache {
         }
     }
 
-
     #[inline(always)]
     pub(super) fn compute_score(&self, record: &CachedRecord, now_secs: u64) -> f64 {
         self.eviction_policy.compute_score(record, now_secs)

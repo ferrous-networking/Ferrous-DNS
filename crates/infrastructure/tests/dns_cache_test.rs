@@ -973,7 +973,13 @@ fn test_compact_retains_valid_entries() {
     let cache = create_refresh_cache(7200);
     coarse_clock::tick();
 
-    cache.insert("valid.test", RecordType::A, make_ip_data("1.1.1.1"), 3600, None);
+    cache.insert(
+        "valid.test",
+        RecordType::A,
+        make_ip_data("1.1.1.1"),
+        3600,
+        None,
+    );
 
     let removed = cache.compact();
     assert_eq!(removed, 0, "Entradas válidas não devem ser removidas");
@@ -1149,7 +1155,11 @@ fn test_lfu_score_below_min_frequency_is_negative() {
         score < 0.0,
         "Score deve ser negativo quando hits (3) < min_frequency (10)"
     );
-    assert_eq!(score, -(10.0 - 3.0), "Score deve ser -(min_frequency - hits)");
+    assert_eq!(
+        score,
+        -(10.0 - 3.0),
+        "Score deve ser -(min_frequency - hits)"
+    );
 }
 
 #[test]
@@ -1169,5 +1179,8 @@ fn test_lfu_score_zero_min_frequency_returns_raw_hits() {
     let policy = LfuPolicy { min_frequency: 0 };
     let record = make_record_with_hits(7);
     let score = policy.compute_score(&record, 0);
-    assert_eq!(score, 7.0, "Com min_frequency=0, score deve ser raw hit_count");
+    assert_eq!(
+        score, 7.0,
+        "Com min_frequency=0, score deve ser raw hit_count"
+    );
 }

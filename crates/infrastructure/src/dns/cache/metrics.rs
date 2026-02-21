@@ -3,10 +3,9 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 #[derive(Default)]
 #[repr(align(64))]
 pub struct CacheMetrics {
-
     pub hits: AtomicU64,
     pub misses: AtomicU64,
-    _hot_pad: [u64; 6], 
+    _hot_pad: [u64; 6],
 
     pub insertions: AtomicU64,
     pub evictions: AtomicU64,

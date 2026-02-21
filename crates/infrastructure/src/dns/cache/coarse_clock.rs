@@ -16,16 +16,13 @@ pub fn coarse_now_secs() -> u64 {
     COARSE_CLOCK.load(Ordering::Relaxed)
 }
 
-
 pub fn tick() {
     COARSE_CLOCK.store(now_secs(), Ordering::Relaxed);
 }
 
-
 #[cfg(target_os = "linux")]
 #[inline]
 pub fn coarse_now_ns() -> u64 {
-
     let mut ts = libc::timespec {
         tv_sec: 0,
         tv_nsec: 0,
@@ -35,4 +32,3 @@ pub fn coarse_now_ns() -> u64 {
     }
     ts.tv_sec as u64 * 1_000_000_000 + ts.tv_nsec as u64
 }
-
