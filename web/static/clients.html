@@ -317,7 +317,6 @@
                     Group <span x-show="form.type==='subnet'" style="color:var(--color-error)">*</span>
                 </label>
                 <select x-model="form.group_id" class="select">
-                    <option value="">No Group</option>
                     <template x-for="g in groups" :key="g.id">
                         <option :value="g.id" x-text="g.name"></option>
                     </template>
@@ -388,7 +387,6 @@
                         </template>
                         <template x-if="editingId === c.id">
                             <select class="select-inline" x-model="editForm.group_id">
-                                <option value="">No Group</option>
                                 <template x-for="g in groups" :key="g.id">
                                     <option :value="g.id" x-text="g.name"></option>
                                 </template>
@@ -535,7 +533,11 @@
             async loadGroups() {
                 try {
                     const res = await fetch('/api/groups');
-                    if (res.ok) this.groups = await res.json();
+                    if (res.ok) {
+                        this.groups = await res.json();
+                        const defaultGroup = this.groups.find(g => g.name === 'Protected') || this.groups[0];
+                        if (defaultGroup && !this.form.group_id) this.form.group_id = defaultGroup.id;
+                    }
                 } catch (e) {
                     console.error('Failed to load groups:', e);
                 }
@@ -566,9 +568,10 @@
 
             startEdit(c) {
                 this.editingId = c.id;
+                const defaultGroup = this.groups.find(g => g.name === 'Protected') || this.groups[0];
                 this.editForm = {
                     hostname: c.hostname || '',
-                    group_id: c.group_id ? String(c.group_id) : '',
+                    group_id: c.group_id ? String(c.group_id) : (defaultGroup ? String(defaultGroup.id) : ''),
                 };
                 this.$nextTick(() => scheduleLucide(50));
             },
