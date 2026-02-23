@@ -38,7 +38,7 @@
 - [ ] dash board web socket performace slow queries 
 - [ ] Advanced analytics and graphs
 - [ ] Query filtering rules
-- [ ] DoQ upstream
+- [x] DoQ upstream
 - [ ] IPv6 upstreams
 - [ ] dns name upstreams (e.: dns.google.com) 
 - [ ] Client identification
