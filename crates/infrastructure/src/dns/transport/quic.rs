@@ -14,9 +14,10 @@ static SHARED_QUIC_CLIENT_CONFIG: LazyLock<quinn::ClientConfig> = LazyLock::new(
     let mut root_store = rustls::RootCertStore::empty();
     root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
     let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
-    let tls_config = rustls::ClientConfig::builder()
+    let mut tls_config = rustls::ClientConfig::builder()
         .with_root_certificates(root_store)
         .with_no_client_auth();
+    tls_config.alpn_protocols = vec![b"doq".to_vec()];
     let quic_config = quinn::crypto::rustls::QuicClientConfig::try_from(Arc::new(tls_config))
         .expect("valid QUIC TLS config");
     quinn::ClientConfig::new(Arc::new(quic_config))
