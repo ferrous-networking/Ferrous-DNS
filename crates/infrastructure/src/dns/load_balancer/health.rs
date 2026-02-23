@@ -82,11 +82,6 @@ impl HealthChecker {
     }
 
     async fn check_server(&self, protocol: DnsProtocol, timeout_ms: u64) {
-        if matches!(protocol, DnsProtocol::Quic { .. }) {
-            debug!(server = %protocol, "Health check skipped: DoQ not yet implemented");
-            return;
-        }
-
         let server_str = protocol.to_string();
         let start = std::time::Instant::now();
         let timeout_duration = Duration::from_millis(timeout_ms);

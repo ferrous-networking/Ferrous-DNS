@@ -1,4 +1,5 @@
 pub mod https;
+#[cfg(feature = "dns-over-quic")]
 pub mod quic;
 pub mod tcp;
 pub mod tls;

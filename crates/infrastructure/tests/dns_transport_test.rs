@@ -1,10 +1,11 @@
 use ferrous_dns_domain::DomainError;
 use ferrous_dns_infrastructure::dns::fast_path;
 use ferrous_dns_infrastructure::dns::forwarding::ResponseParser;
+#[cfg(feature = "dns-over-quic")]
+use ferrous_dns_infrastructure::dns::transport::quic::QuicTransport;
 use ferrous_dns_infrastructure::dns::transport::DnsTransport;
 use ferrous_dns_infrastructure::dns::transport::{
-    https::HttpsTransport, quic::QuicTransport, tcp::TcpTransport, tls::TlsTransport,
-    udp::UdpTransport,
+    https::HttpsTransport, tcp::TcpTransport, tls::TlsTransport, udp::UdpTransport,
 };
 use ferrous_dns_infrastructure::dns::wire_response;
 use std::net::{IpAddr, SocketAddr};
@@ -163,6 +164,7 @@ fn test_https_transport_various_providers() {
     }
 }
 
+#[cfg(feature = "dns-over-quic")]
 #[test]
 fn test_quic_transport_protocol_name() {
     let (addr, hostname) = DnsServerBuilder::cloudflare_doq();
@@ -171,6 +173,7 @@ fn test_quic_transport_protocol_name() {
     assert_eq!(transport.protocol_name(), "QUIC");
 }
 
+#[cfg(feature = "dns-over-quic")]
 #[test]
 fn test_quic_transport_google() {
     let (addr, hostname) = DnsServerBuilder::google_doq();
@@ -179,20 +182,13 @@ fn test_quic_transport_google() {
     assert_eq!(transport.protocol_name(), "QUIC");
 }
 
-#[tokio::test]
-async fn test_quic_transport_returns_not_implemented_error() {
+#[cfg(feature = "dns-over-quic")]
+#[test]
+fn test_quic_transport_creation() {
     let (addr, hostname) = DnsServerBuilder::cloudflare_doq();
     let transport = QuicTransport::new(addr, hostname.into());
 
-    let result = DnsTransport::send(&transport, &[], std::time::Duration::from_secs(1)).await;
-
-    assert!(result.is_err());
-    let error_message = result.unwrap_err().to_string();
-    assert!(
-        error_message.contains("not yet implemented"),
-        "Expected 'not yet implemented' in error, got: {}",
-        error_message
-    );
+    assert_eq!(transport.protocol_name(), "QUIC");
 }
 
 #[test]
@@ -202,21 +198,38 @@ fn test_all_protocols_have_unique_names() {
     let (tls_addr, tls_host) = DnsServerBuilder::cloudflare_tls();
     let tls = TlsTransport::new(tls_addr, tls_host);
     let https = HttpsTransport::new(DnsServerBuilder::cloudflare_https());
-    let (quic_addr, quic_host) = DnsServerBuilder::cloudflare_doq();
-    let quic = QuicTransport::new(quic_addr, quic_host.into());
 
-    let names = vec![
-        udp.protocol_name(),
-        tcp.protocol_name(),
-        tls.protocol_name(),
-        https.protocol_name(),
-        quic.protocol_name(),
-    ];
+    #[cfg(feature = "dns-over-quic")]
+    {
+        let (quic_addr, quic_host) = DnsServerBuilder::cloudflare_doq();
+        let quic = QuicTransport::new(quic_addr, quic_host.into());
+        let names = vec![
+            udp.protocol_name(),
+            tcp.protocol_name(),
+            tls.protocol_name(),
+            https.protocol_name(),
+            quic.protocol_name(),
+        ];
+        let mut unique = names.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), names.len(), "Protocol names should be unique");
+        return;
+    }
 
-    let mut unique = names.clone();
-    unique.sort();
-    unique.dedup();
-    assert_eq!(unique.len(), names.len(), "Protocol names should be unique");
+    #[allow(unreachable_code)]
+    {
+        let names = vec![
+            udp.protocol_name(),
+            tcp.protocol_name(),
+            tls.protocol_name(),
+            https.protocol_name(),
+        ];
+        let mut unique = names.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), names.len(), "Protocol names should be unique");
+    }
 }
 
 #[test]
