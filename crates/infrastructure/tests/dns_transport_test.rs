@@ -117,9 +117,6 @@ fn test_tls_transport_google() {
 }
 
 #[test]
-fn test_shared_tls_config() {}
-
-#[test]
 fn test_tls_transport_different_hostnames() {
     let _cloudflare = TlsTransport::new(
         "1.1.1.1:853".parse().unwrap(),
