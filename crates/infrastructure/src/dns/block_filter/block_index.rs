@@ -86,6 +86,24 @@ pub struct BlockIndex {
 }
 
 impl BlockIndex {
+    pub fn empty(default_group_id: i64) -> Self {
+        Self {
+            group_masks: HashMap::new(),
+            default_group_id,
+            total_blocked_domains: 0,
+            exact: DashMap::with_hasher(FxBuildHasher),
+            bloom: AtomicBloom::new(1000, 0.001),
+            wildcard: SuffixTrie::new(),
+            patterns: Vec::new(),
+            allowlists: AllowlistIndex::new(),
+            managed_denies: HashMap::new(),
+            managed_deny_wildcards: HashMap::new(),
+            allow_regex_patterns: HashMap::new(),
+            block_regex_patterns: HashMap::new(),
+            has_advanced_rules: false,
+        }
+    }
+
     #[inline]
     pub fn group_mask(&self, group_id: i64) -> SourceBitSet {
         self.group_masks.get(&group_id).copied().unwrap_or_else(|| {

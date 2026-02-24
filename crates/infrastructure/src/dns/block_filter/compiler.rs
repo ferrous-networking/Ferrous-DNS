@@ -428,7 +428,13 @@ pub async fn compile_block_index(
         exact,
         wildcard,
         patterns,
-    } = build_exact_and_wildcard(&manual_domains, &source_entries);
+    } = tokio::task::spawn_blocking(move || {
+        build_exact_and_wildcard(&manual_domains, &source_entries)
+    })
+    .await
+    .map_err(|e| {
+        DomainError::BlockFilterCompileError(format!("block index build task panicked: {e}"))
+    })?;
 
     let mut managed_denies: HashMap<i64, DashSet<CompactString, FxBuildHasher>> = HashMap::new();
     let mut managed_deny_wildcards: HashMap<i64, SuffixTrie> = HashMap::new();
