@@ -3,6 +3,7 @@ use ferrous_dns_infrastructure::dns::server::DnsServerHandler;
 use ferrous_dns_infrastructure::dns::wire_response;
 use hickory_server::ServerFuture;
 use socket2::{Domain, Protocol, Socket, Type};
+use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::{TcpListener, UdpSocket};
@@ -60,42 +61,56 @@ async fn run_udp_worker(socket: Arc<UdpSocket>, handler: Arc<DnsServerHandler>, 
     let mut recv_buf = [0u8; 4096];
 
     loop {
-        let (n, from, dst_ip) = match pktinfo::recv_with_pktinfo(&socket, &mut recv_buf).await {
-            Ok(x) => x,
-            Err(e) => {
-                error!(worker = worker_id, error = %e, "UDP recv error");
-                continue;
-            }
-        };
-
-        let query_buf = &recv_buf[..n];
-        let client_ip = from.ip();
-
-        if let Some(fast_query) = fast_path::parse_query(query_buf) {
-            if let Some((addresses, ttl)) =
-                handler.try_fast_path(fast_query.domain(), fast_query.record_type, client_ip)
-            {
-                if let Some((wire, wire_len)) =
-                    wire_response::build_cache_hit_response(&fast_query, query_buf, &addresses, ttl)
-                {
-                    let _ =
-                        pktinfo::send_with_src_ip(&socket, &wire[..wire_len], from, dst_ip).await;
-                    continue;
-                }
-            }
+        if socket.readable().await.is_err() {
+            break;
         }
 
-        let handler_clone = handler.clone();
-        let socket_clone = socket.clone();
-        let owned_buf: Arc<[u8]> = Arc::from(query_buf);
-        tokio::spawn(async move {
-            if let Some(response) = handler_clone
-                .handle_raw_udp_fallback(&owned_buf, client_ip)
-                .await
-            {
-                let _ = pktinfo::send_with_src_ip(&socket_clone, &response, from, dst_ip).await;
+        // Drain all packets from the socket before re-arming epoll.
+        // This avoids per-packet clear_readiness + epoll re-arm overhead
+        // (fdget, copy_msghdr_from_user, copy_iovec_from_user per syscall).
+        loop {
+            let (n, from, dst_ip) = match pktinfo::try_recv_with_pktinfo(&socket, &mut recv_buf) {
+                Ok(x) => x,
+                Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                Err(e) => {
+                    error!(worker = worker_id, error = %e, "UDP recv error");
+                    break;
+                }
+            };
+
+            let query_buf = &recv_buf[..n];
+            let client_ip = from.ip();
+
+            if let Some(fast_query) = fast_path::parse_query(query_buf) {
+                if let Some((addresses, ttl)) =
+                    handler.try_fast_path(fast_query.domain(), fast_query.record_type, client_ip)
+                {
+                    if let Some((wire, wire_len)) = wire_response::build_cache_hit_response(
+                        &fast_query,
+                        query_buf,
+                        &addresses,
+                        ttl,
+                    ) {
+                        let _ = pktinfo::send_with_src_ip(&socket, &wire[..wire_len], from, dst_ip)
+                            .await;
+                        continue;
+                    }
+                }
             }
-        });
+
+            let handler_clone = handler.clone();
+            let socket_clone = socket.clone();
+            let owned_buf: Arc<[u8]> = Arc::from(query_buf);
+            tokio::spawn(async move {
+                if let Some(response) = handler_clone
+                    .handle_raw_udp_fallback(&owned_buf, client_ip)
+                    .await
+                {
+                    let _ = pktinfo::send_with_src_ip(&socket_clone, &response, from, dst_ip).await;
+                }
+            });
+        }
     }
 }
 

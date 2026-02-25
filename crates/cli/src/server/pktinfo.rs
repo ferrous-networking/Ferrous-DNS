@@ -19,25 +19,7 @@ pub fn enable_pktinfo(socket: &Socket) {
     }
 }
 
-pub async fn recv_with_pktinfo(
-    socket: &UdpSocket,
-    buf: &mut [u8],
-) -> io::Result<(usize, SocketAddr, IpAddr)> {
-    loop {
-        socket.readable().await?;
-        match try_recv_with_pktinfo(socket, buf) {
-            Err(e)
-                if e.kind() == io::ErrorKind::WouldBlock
-                    || e.kind() == io::ErrorKind::Interrupted =>
-            {
-                continue
-            }
-            result => return result,
-        }
-    }
-}
-
-fn try_recv_with_pktinfo(
+pub(crate) fn try_recv_with_pktinfo(
     socket: &UdpSocket,
     buf: &mut [u8],
 ) -> io::Result<(usize, SocketAddr, IpAddr)> {
