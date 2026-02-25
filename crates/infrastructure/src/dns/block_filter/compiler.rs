@@ -293,9 +293,6 @@ fn build_exact_and_wildcard(
             .count();
 
     let bloom_capacity = (exact_count + 100).max(1000);
-    // 0.05 FP rate → num_hashes=5 (fast path) and ~1 MB bloom for 1.2 M domains,
-    // which fits in the RPi4 L3 cache. A false positive only costs one extra
-    // DashMap lookup on allow-listed queries — no correctness impact.
     let bloom = AtomicBloom::new(bloom_capacity, 0.05);
     let exact: DashMap<CompactString, SourceBitSet, FxBuildHasher> =
         DashMap::with_capacity_and_hasher(exact_count, FxBuildHasher);
@@ -310,8 +307,6 @@ fn build_exact_and_wildcard(
             .or_insert(MANUAL_SOURCE_BIT);
     }
 
-    // Parallel pass: exact domains are the vast majority (~95 %+) and both
-    // AtomicBloom (fetch_or) and DashMap (shard locks) are Sync.
     source_entries.par_iter().for_each(|(bit, entries)| {
         let source_bit: SourceBitSet = 1u64 << *bit;
         for entry in entries {
@@ -325,7 +320,6 @@ fn build_exact_and_wildcard(
         }
     });
 
-    // Sequential pass: wildcards and patterns (SuffixTrie requires &mut self).
     for (bit, entries) in source_entries {
         let source_bit: SourceBitSet = 1u64 << *bit;
         for entry in entries {
