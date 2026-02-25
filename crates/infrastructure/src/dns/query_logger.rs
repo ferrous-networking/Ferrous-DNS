@@ -1,7 +1,7 @@
 use crate::dns::events::QueryEvent;
 use ferrous_dns_application::ports::QueryLogRepository;
 use ferrous_dns_domain::{QueryLog, QuerySource};
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, warn};
@@ -70,9 +70,7 @@ impl QueryEventLogger {
                 id: None,
                 domain: event.domain.clone(),
                 record_type: event.record_type,
-                client_ip: "127.0.0.1"
-                    .parse::<IpAddr>()
-                    .unwrap_or_else(|_| IpAddr::from([127, 0, 0, 1])),
+                client_ip: IpAddr::V4(Ipv4Addr::LOCALHOST),
                 client_hostname: None,
                 blocked: false,
                 response_time_us: Some(event.response_time_us),

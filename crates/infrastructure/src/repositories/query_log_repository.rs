@@ -9,7 +9,7 @@ use ferrous_dns_domain::{
 use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
@@ -36,22 +36,32 @@ fn days_ago_cutoff(days: u32) -> String {
 const COLS_PER_ROW: usize = 13;
 const ROWS_PER_CHUNK: usize = 999 / COLS_PER_ROW;
 
-fn build_multi_insert_sql(n: usize) -> String {
+static INSERT_SQL_CACHE: OnceLock<Vec<String>> = OnceLock::new();
+
+fn insert_sql(n: usize) -> &'static str {
     debug_assert!(n > 0 && n <= ROWS_PER_CHUNK);
-    const HEADER: &str = "INSERT INTO query_log \
-        (domain, record_type, client_ip, blocked, response_time_ms, cache_hit, \
-         cache_refresh, dnssec_status, upstream_server, response_status, query_source, group_id, block_source) \
-        VALUES ";
-    const PLACEHOLDER: &str = "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    let mut sql = String::with_capacity(HEADER.len() + n * (PLACEHOLDER.len() + 1));
-    sql.push_str(HEADER);
-    for i in 0..n {
-        if i > 0 {
-            sql.push(',');
-        }
-        sql.push_str(PLACEHOLDER);
-    }
-    sql
+    let cache = INSERT_SQL_CACHE.get_or_init(|| {
+        const HEADER: &str = "INSERT INTO query_log \
+            (domain, record_type, client_ip, blocked, response_time_ms, cache_hit, \
+             cache_refresh, dnssec_status, upstream_server, response_status, query_source, group_id, block_source) \
+            VALUES ";
+        const PLACEHOLDER: &str = "(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        (1..=ROWS_PER_CHUNK)
+            .map(|n| {
+                let mut sql =
+                    String::with_capacity(HEADER.len() + n * (PLACEHOLDER.len() + 1));
+                sql.push_str(HEADER);
+                for i in 0..n {
+                    if i > 0 {
+                        sql.push(',');
+                    }
+                    sql.push_str(PLACEHOLDER);
+                }
+                sql
+            })
+            .collect()
+    });
+    &cache[n - 1]
 }
 
 struct QueryLogEntry {
@@ -279,7 +289,7 @@ impl SqliteQueryLogRepository {
         let mut errors = 0usize;
 
         for chunk in batch.chunks(ROWS_PER_CHUNK) {
-            let sql = build_multi_insert_sql(chunk.len());
+            let sql = insert_sql(chunk.len());
             let mut q = sqlx::query(&sql);
             for entry in chunk {
                 q = q
