@@ -92,8 +92,10 @@ async fn run_udp_worker(socket: Arc<UdpSocket>, handler: Arc<DnsServerHandler>, 
                         &addresses,
                         ttl,
                     ) {
-                        let _ = pktinfo::send_with_src_ip(&socket, &wire[..wire_len], from, dst_ip)
-                            .await;
+                        // UDP loopback send buffer is never full; skip writable().await
+                        // to avoid ReadyGuard + set_waker + epoll_ctl overhead per packet.
+                        let _ =
+                            pktinfo::try_send_with_src_ip(&socket, &wire[..wire_len], from, dst_ip);
                         continue;
                     }
                 }
@@ -107,7 +109,7 @@ async fn run_udp_worker(socket: Arc<UdpSocket>, handler: Arc<DnsServerHandler>, 
                     .handle_raw_udp_fallback(&owned_buf, client_ip)
                     .await
                 {
-                    let _ = pktinfo::send_with_src_ip(&socket_clone, &response, from, dst_ip).await;
+                    let _ = pktinfo::try_send_with_src_ip(&socket_clone, &response, from, dst_ip);
                 }
             });
         }

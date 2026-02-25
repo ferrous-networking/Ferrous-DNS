@@ -74,27 +74,7 @@ fn extract_pktinfo_dst(cmsg_buf: &[u8], controllen: usize) -> IpAddr {
     IpAddr::V4(Ipv4Addr::UNSPECIFIED)
 }
 
-pub async fn send_with_src_ip(
-    socket: &UdpSocket,
-    buf: &[u8],
-    to: SocketAddr,
-    src: IpAddr,
-) -> io::Result<()> {
-    loop {
-        socket.writable().await?;
-        match try_send_with_src_ip(socket, buf, to, src) {
-            Err(e)
-                if e.kind() == io::ErrorKind::WouldBlock
-                    || e.kind() == io::ErrorKind::Interrupted =>
-            {
-                continue
-            }
-            result => return result,
-        }
-    }
-}
-
-fn try_send_with_src_ip(
+pub(crate) fn try_send_with_src_ip(
     socket: &UdpSocket,
     buf: &[u8],
     to: SocketAddr,

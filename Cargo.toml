@@ -101,6 +101,11 @@ inherits = "release"
 debug = true
 lto = "thin"
 
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = "none"
+
 [profile.dev-opt]
 inherits = "dev"
 opt-level = 2
