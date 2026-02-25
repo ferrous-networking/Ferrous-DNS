@@ -15,7 +15,6 @@ pub struct DnsResolution {
     pub cname_chain: Arc<[Arc<str>]>,
     pub upstream_server: Option<String>,
     pub min_ttl: Option<u32>,
-    /// Records from the AUTHORITY section of the upstream response (e.g. SOA for NODATA).
     pub authority_records: Vec<Record>,
 }
 
