@@ -363,8 +363,6 @@ impl DnsCache {
         self.access_window_secs
     }
 
-    /// Atualiza TTL de uma entrada existente in-place, preservando `hit_count` e `last_access`.
-    /// Retorna `true` se a entrada foi encontrada e atualizada, `false` caso contrário.
     pub fn refresh_record(
         &self,
         domain: &str,

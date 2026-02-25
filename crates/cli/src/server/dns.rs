@@ -55,15 +55,6 @@ pub async fn start_dns_server(bind_addr: String, handler: DnsServerHandler) -> a
     Ok(())
 }
 
-/// Per-worker UDP loop with two code paths:
-///
-/// **Fast path** (cache hit, A/AAAA, no DNSSEC):
-///   `recv_from` → `parse_query` → `try_fast_path` → `build_cache_hit_response` → `send_to`
-///   Zero heap allocation. Bypasses Hickory's Name/Record/BinEncoder chain entirely.
-///
-/// **Fallback** (cache miss, non-A/AAAA, DNSSEC DO bit, blocked, parse error):
-///   Spawns a task → `handle_raw_udp_fallback` (full use-case + Hickory serialization).
-///   Spawning keeps the recv loop non-blocking.
 async fn run_udp_worker(socket: Arc<UdpSocket>, handler: Arc<DnsServerHandler>, worker_id: usize) {
     let mut recv_buf = [0u8; 4096];
 
