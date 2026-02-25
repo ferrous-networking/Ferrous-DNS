@@ -6,7 +6,7 @@ use dashmap::{DashMap, DashSet};
 use fancy_regex::Regex;
 use ferrous_dns_domain::BlockSource;
 use rustc_hash::FxBuildHasher;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub type SourceBitSet = u64;
 
@@ -78,11 +78,11 @@ pub struct BlockIndex {
     pub allow_regex_patterns: HashMap<i64, Vec<Regex>>,
     /// User-defined regex block rules (action=deny): group_id → compiled patterns
     pub block_regex_patterns: HashMap<i64, Vec<Regex>>,
-    /// `true` when any managed-deny or regex rule is configured for any group.
-    /// When `false`, `is_blocked` skips the four per-group HashMap lookups for
-    /// those rule classes, saving ~60–80 ns per query on typical home-server
-    /// deployments where no custom managed/regex rules are active.
-    pub has_advanced_rules: bool,
+    /// Set of group IDs that have managed-deny or regex rules configured.
+    /// Queries for groups NOT in this set skip the four per-group lookups
+    /// entirely, saving ~60–80 ns per query on typical deployments where only
+    /// some groups use advanced filtering.
+    pub groups_with_advanced_rules: HashSet<i64>,
 }
 
 impl BlockIndex {
@@ -122,7 +122,7 @@ impl BlockIndex {
             return None;
         }
 
-        if self.has_advanced_rules {
+        if self.groups_with_advanced_rules.contains(&group_id) {
             if let Some(regexes) = self.allow_regex_patterns.get(&group_id) {
                 for r in regexes {
                     if r.is_match(domain).unwrap_or(false) {
