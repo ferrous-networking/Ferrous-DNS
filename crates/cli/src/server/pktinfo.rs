@@ -3,7 +3,6 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::os::unix::io::AsRawFd;
 
 use socket2::Socket;
-use tokio::net::UdpSocket;
 
 pub fn enable_pktinfo(socket: &Socket) {
     let fd = socket.as_raw_fd();
@@ -20,7 +19,7 @@ pub fn enable_pktinfo(socket: &Socket) {
 }
 
 pub(crate) fn try_recv_with_pktinfo(
-    socket: &UdpSocket,
+    socket: &std::net::UdpSocket,
     buf: &mut [u8],
 ) -> io::Result<(usize, SocketAddr, IpAddr)> {
     let fd = socket.as_raw_fd();
@@ -75,7 +74,7 @@ fn extract_pktinfo_dst(cmsg_buf: &[u8], controllen: usize) -> IpAddr {
 }
 
 pub(crate) fn try_send_with_src_ip(
-    socket: &UdpSocket,
+    socket: &std::net::UdpSocket,
     buf: &[u8],
     to: SocketAddr,
     src: IpAddr,
@@ -131,7 +130,7 @@ pub(crate) fn try_send_with_src_ip(
     Ok(())
 }
 
-fn socket_send_fallback(socket: &UdpSocket, buf: &[u8], to: SocketAddr) -> io::Result<()> {
+fn socket_send_fallback(socket: &std::net::UdpSocket, buf: &[u8], to: SocketAddr) -> io::Result<()> {
     let fd = socket.as_raw_fd();
     let dst_addr = socket_addr_to_sockaddr_in(to);
     let iov = libc::iovec {
