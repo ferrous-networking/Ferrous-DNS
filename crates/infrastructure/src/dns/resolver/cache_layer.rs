@@ -86,7 +86,7 @@ impl CachedResolver {
                         cache_hit: true,
                         local_dns: false,
                         dnssec_status: dnssec_str,
-                        cname_chain: Arc::clone(&entry.cname_chain),
+                        cname_chain: Arc::from([]),
                         upstream_server: None,
                         min_ttl: remaining_ttl,
                         authority_records: vec![],
@@ -150,10 +150,7 @@ impl CachedResolver {
             self.cache.insert(
                 query.domain.as_ref(),
                 query.record_type,
-                CachedData::IpAddresses(CachedAddresses {
-                    addresses,
-                    cname_chain: Arc::clone(&resolution.cname_chain),
-                }),
+                CachedData::IpAddresses(CachedAddresses { addresses }),
                 ttl,
                 Some(dnssec_status),
             );
