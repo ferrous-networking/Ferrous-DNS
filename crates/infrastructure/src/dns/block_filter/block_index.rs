@@ -94,7 +94,7 @@ impl BlockIndex {
             managed_deny_wildcards: HashMap::new(),
             allow_regex_patterns: HashMap::new(),
             block_regex_patterns: HashMap::new(),
-            has_advanced_rules: false,
+            groups_with_advanced_rules: HashSet::new(),
         }
     }
 
