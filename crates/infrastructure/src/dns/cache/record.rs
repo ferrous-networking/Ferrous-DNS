@@ -187,10 +187,16 @@ impl CachedRecord {
         self.counters
             .hit_count
             .fetch_add(1, AtomicOrdering::Relaxed);
-        self.counters.last_access.store(
-            super::coarse_clock::coarse_now_secs(),
-            AtomicOrdering::Relaxed,
-        );
+        let now = super::coarse_clock::coarse_now_secs();
+        // Skip the store when the timestamp has not advanced: coarse_now_secs
+        // has second precision, so the write happens at most once per second per
+        // entry. This avoids bouncing the HotCounters cache line across all
+        // worker cores on every hit to a popular domain.
+        if self.counters.last_access.load(AtomicOrdering::Relaxed) < now {
+            self.counters
+                .last_access
+                .store(now, AtomicOrdering::Relaxed);
+        }
     }
 
     pub fn hit_rate(&self) -> f64 {
