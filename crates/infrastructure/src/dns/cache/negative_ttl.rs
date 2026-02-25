@@ -5,6 +5,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::debug;
 
+const MAX_TRACKED_DOMAINS: usize = 10_000;
+
 pub struct NegativeQueryTracker {
     query_counts: Arc<DashMap<Arc<str>, QueryCounter>>,
     window_secs: u64,
@@ -46,6 +48,12 @@ impl NegativeQueryTracker {
         let domain_arc = Arc::clone(domain);
         let now = coarse_now_secs();
         let entry_count = Arc::clone(&self.entry_count);
+
+        if self.query_counts.len() >= MAX_TRACKED_DOMAINS
+            && !self.query_counts.contains_key(domain_arc.as_ref())
+        {
+            return self.rare_ttl;
+        }
 
         let mut entry = self.query_counts.entry(domain_arc).or_insert_with(|| {
             entry_count.fetch_add(1, Ordering::Relaxed);

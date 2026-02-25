@@ -129,13 +129,14 @@ impl BlockDecisionCache {
             self.inner.remove(k);
         }
         if self.inner.len() >= L1_CAPACITY {
-            let oldest = self
+            let to_remove: Vec<u64> = self
                 .inner
                 .iter()
-                .min_by_key(|e| e.value().1)
-                .map(|e| *e.key());
-            if let Some(k) = oldest {
-                self.inner.remove(&k);
+                .map(|e| *e.key())
+                .take(EVICTION_BATCH_SIZE)
+                .collect();
+            for k in &to_remove {
+                self.inner.remove(k);
             }
         }
     }

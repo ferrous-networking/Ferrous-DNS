@@ -3,6 +3,9 @@ use dashmap::DashMap;
 use std::sync::Arc;
 use tracing::{debug, info};
 
+const MAX_UNIQUE_DOMAINS: usize = 50_000;
+const EVICTION_BATCH: usize = 512;
+
 pub struct PrefetchPredictor {
     patterns: Arc<DashMap<CompactString, Vec<PredictionEntry>>>,
     max_predictions: usize,
@@ -31,8 +34,24 @@ impl PrefetchPredictor {
         }
     }
 
+    fn evict_if_full(&self) {
+        if self.patterns.len() < MAX_UNIQUE_DOMAINS {
+            return;
+        }
+        let to_remove: Vec<CompactString> = self
+            .patterns
+            .iter()
+            .map(|e| e.key().clone())
+            .take(EVICTION_BATCH)
+            .collect();
+        for k in &to_remove {
+            self.patterns.remove(k);
+        }
+    }
+
     pub fn record_pattern(&self, previous_domain: Option<&str>, current_domain: &str) {
         if let Some(prev) = previous_domain {
+            self.evict_if_full();
             let key = CompactString::from(prev);
             let mut entry = self.patterns.entry(key).or_default();
             if let Some(pred) = entry
