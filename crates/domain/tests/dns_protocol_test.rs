@@ -1,4 +1,4 @@
-use ferrous_dns_domain::DnsProtocol;
+use ferrous_dns_domain::{DnsProtocol, UpstreamAddr};
 
 #[test]
 fn test_parse_udp() {
@@ -209,4 +209,209 @@ fn test_ipv6_parsing() {
     if let Some(addr) = protocol.socket_addr() {
         assert!(addr.is_ipv6());
     }
+}
+
+// ── UpstreamAddr + hostname resolution tests ──────────────────────────────────
+
+#[test]
+fn test_parse_udp_hostname() {
+    let protocol: DnsProtocol = "udp://dns.google:53".parse().unwrap();
+    if let DnsProtocol::Udp { addr } = &protocol {
+        assert!(addr.is_unresolved());
+        assert_eq!(addr.hostname_str(), Some("dns.google"));
+        assert_eq!(addr.port(), 53);
+        assert!(addr.socket_addr().is_none());
+    } else {
+        panic!("Expected Udp variant");
+    }
+}
+
+#[test]
+fn test_parse_tcp_hostname() {
+    let protocol: DnsProtocol = "tcp://dns.google:53".parse().unwrap();
+    if let DnsProtocol::Tcp { addr } = &protocol {
+        assert!(addr.is_unresolved());
+        assert_eq!(addr.hostname_str(), Some("dns.google"));
+        assert_eq!(addr.port(), 53);
+    } else {
+        panic!("Expected Tcp variant");
+    }
+}
+
+#[test]
+fn test_parse_tls_hostname_no_placeholder() {
+    let protocol: DnsProtocol = "tls://dns.google:853".parse().unwrap();
+    assert!(
+        protocol.socket_addr().is_none(),
+        "TLS with hostname should not have a placeholder IP"
+    );
+    assert!(protocol.needs_resolution());
+}
+
+#[test]
+fn test_parse_doq_hostname_no_placeholder() {
+    let protocol: DnsProtocol = "doq://dns.cloudflare.com:853".parse().unwrap();
+    assert!(
+        protocol.socket_addr().is_none(),
+        "DoQ with hostname should not have a placeholder IP"
+    );
+    assert!(protocol.needs_resolution());
+}
+
+#[test]
+fn test_parse_udp_ipv6() {
+    let protocol: DnsProtocol = "udp://[2001:4860:4860::8888]:53".parse().unwrap();
+    if let DnsProtocol::Udp { addr } = &protocol {
+        assert!(!addr.is_unresolved());
+        let sa = addr.socket_addr().unwrap();
+        assert!(sa.is_ipv6());
+        assert_eq!(sa.port(), 53);
+    } else {
+        panic!("Expected Udp variant");
+    }
+}
+
+#[test]
+fn test_parse_tcp_ipv6() {
+    let protocol: DnsProtocol = "tcp://[2606:4700:4700::1111]:53".parse().unwrap();
+    if let DnsProtocol::Tcp { addr } = &protocol {
+        let sa = addr.socket_addr().unwrap();
+        assert!(sa.is_ipv6());
+        assert_eq!(sa.port(), 53);
+    } else {
+        panic!("Expected Tcp variant");
+    }
+}
+
+#[test]
+fn test_parse_doq_ipv6() {
+    let protocol: DnsProtocol = "doq://[2606:4700:4700::1111]:853".parse().unwrap();
+    if let DnsProtocol::Quic { addr, .. } = &protocol {
+        let sa = addr.socket_addr().unwrap();
+        assert!(sa.is_ipv6());
+        assert_eq!(sa.port(), 853);
+    } else {
+        panic!("Expected Quic variant");
+    }
+}
+
+#[test]
+fn test_with_resolved_addr_udp() {
+    let protocol: DnsProtocol = "udp://dns.google:53".parse().unwrap();
+    let resolved_addr: std::net::SocketAddr = "8.8.8.8:53".parse().unwrap();
+    let resolved = protocol.with_resolved_addr(resolved_addr);
+
+    if let DnsProtocol::Udp { addr } = &resolved {
+        assert_eq!(addr.socket_addr(), Some(resolved_addr));
+        assert!(!addr.is_unresolved());
+    } else {
+        panic!("Expected Udp variant");
+    }
+}
+
+#[test]
+fn test_with_resolved_addr_tls() {
+    let protocol: DnsProtocol = "tls://dns.google:853".parse().unwrap();
+    let resolved_addr: std::net::SocketAddr = "8.8.8.8:853".parse().unwrap();
+    let resolved = protocol.with_resolved_addr(resolved_addr);
+
+    if let DnsProtocol::Tls { addr, hostname } = &resolved {
+        assert_eq!(addr.socket_addr(), Some(resolved_addr));
+        assert_eq!(&**hostname, "dns.google");
+    } else {
+        panic!("Expected Tls variant");
+    }
+}
+
+#[test]
+fn test_with_resolved_addr_quic() {
+    let protocol: DnsProtocol = "doq://dns.cloudflare.com:853".parse().unwrap();
+    let resolved_addr: std::net::SocketAddr = "1.1.1.1:853".parse().unwrap();
+    let resolved = protocol.with_resolved_addr(resolved_addr);
+
+    if let DnsProtocol::Quic { addr, hostname } = &resolved {
+        assert_eq!(addr.socket_addr(), Some(resolved_addr));
+        assert_eq!(&**hostname, "dns.cloudflare.com");
+    } else {
+        panic!("Expected Quic variant");
+    }
+}
+
+#[test]
+fn test_with_resolved_addr_https_returns_clone() {
+    let protocol: DnsProtocol = "https://dns.google/dns-query".parse().unwrap();
+    let resolved_addr: std::net::SocketAddr = "8.8.8.8:443".parse().unwrap();
+    let resolved = protocol.with_resolved_addr(resolved_addr);
+    assert_eq!(protocol, resolved);
+}
+
+#[test]
+fn test_needs_resolution_unresolved() {
+    let udp: DnsProtocol = "udp://dns.google:53".parse().unwrap();
+    assert!(udp.needs_resolution());
+
+    let tcp: DnsProtocol = "tcp://dns.google:53".parse().unwrap();
+    assert!(tcp.needs_resolution());
+
+    let tls: DnsProtocol = "tls://dns.google:853".parse().unwrap();
+    assert!(tls.needs_resolution());
+
+    let quic: DnsProtocol = "doq://dns.cloudflare.com:853".parse().unwrap();
+    assert!(quic.needs_resolution());
+}
+
+#[test]
+fn test_needs_resolution_resolved() {
+    let udp: DnsProtocol = "udp://8.8.8.8:53".parse().unwrap();
+    assert!(!udp.needs_resolution());
+
+    let tcp: DnsProtocol = "tcp://1.1.1.1:53".parse().unwrap();
+    assert!(!tcp.needs_resolution());
+
+    let tls: DnsProtocol = "tls://1.1.1.1:853".parse().unwrap();
+    assert!(!tls.needs_resolution());
+
+    let https: DnsProtocol = "https://dns.google/dns-query".parse().unwrap();
+    assert!(!https.needs_resolution());
+
+    let h3: DnsProtocol = "h3://dns.google/dns-query".parse().unwrap();
+    assert!(!h3.needs_resolution());
+}
+
+#[test]
+fn test_upstream_addr_display() {
+    let resolved = UpstreamAddr::Resolved("8.8.8.8:53".parse().unwrap());
+    assert_eq!(format!("{}", resolved), "8.8.8.8:53");
+
+    let unresolved = UpstreamAddr::Unresolved {
+        hostname: "dns.google".into(),
+        port: 53,
+    };
+    assert_eq!(format!("{}", unresolved), "dns.google:53");
+}
+
+#[test]
+fn test_upstream_addr_unresolved_parts() {
+    let unresolved = UpstreamAddr::Unresolved {
+        hostname: "dns.google".into(),
+        port: 53,
+    };
+    let (host, port) = unresolved.unresolved_parts().unwrap();
+    assert_eq!(host, "dns.google");
+    assert_eq!(port, 53);
+
+    let resolved = UpstreamAddr::Resolved("8.8.8.8:53".parse().unwrap());
+    assert!(resolved.unresolved_parts().is_none());
+}
+
+#[test]
+fn test_with_resolved_addr_ipv6() {
+    let protocol: DnsProtocol = "udp://dns.google:53".parse().unwrap();
+    let ipv6_addr: std::net::SocketAddr = "[2001:4860:4860::8888]:53".parse().unwrap();
+    let resolved = protocol.with_resolved_addr(ipv6_addr);
+
+    assert!(!resolved.needs_resolution());
+    let sa = resolved.socket_addr().unwrap();
+    assert!(sa.is_ipv6());
+    assert_eq!(format!("{}", resolved), "udp://[2001:4860:4860::8888]:53");
 }
