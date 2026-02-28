@@ -58,17 +58,30 @@ impl DnsServices {
         }
 
         let cache_maintenance = if config.dns.cache_enabled && config.dns.cache_optimistic_refresh {
-            let resolver_for_maintenance = HickoryDnsResolver::new_with_pools(
-                pool_manager_clone.clone(),
-                timeout_ms,
-                false,
-                None,
-            )?
-            .with_cache(cache.clone(), config.dns.cache_ttl);
+            let (stale_tx, stale_rx) = tokio::sync::mpsc::channel(256);
+            cache.set_stale_refresh_sender(stale_tx);
+
+            let resolver_for_maintenance: Arc<dyn ferrous_dns_application::ports::DnsResolver> =
+                Arc::new(
+                    HickoryDnsResolver::new_with_pools(
+                        pool_manager_clone.clone(),
+                        timeout_ms,
+                        false,
+                        None,
+                    )?
+                    .with_cache(cache.clone(), config.dns.cache_ttl),
+                );
+
+            DnsCacheMaintenance::start_stale_listener(
+                cache.clone(),
+                Arc::clone(&resolver_for_maintenance),
+                Some(repos.query_log.clone()),
+                stale_rx,
+            );
 
             Some(Arc::new(DnsCacheMaintenance::new(
                 cache.clone(),
-                Arc::new(resolver_for_maintenance),
+                resolver_for_maintenance,
                 Some(repos.query_log.clone()),
             )) as Arc<dyn CacheMaintenancePort>)
         } else {

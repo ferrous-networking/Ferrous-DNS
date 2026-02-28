@@ -1,16 +1,18 @@
 use super::cache::{coarse_clock, CachedAddresses, DnsCache};
 
 use async_trait::async_trait;
+use compact_str::CompactString;
 use ferrous_dns_application::ports::{
     CacheCompactionOutcome, CacheMaintenancePort, CacheRefreshOutcome, DnsResolver,
     QueryLogRepository,
 };
-use ferrous_dns_domain::{DnsQuery, DomainError, QueryLog, QuerySource};
+use ferrous_dns_domain::{DnsQuery, DomainError, QueryLog, QuerySource, RecordType};
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::sync::mpsc;
 use tokio::time::sleep;
-use tracing::debug;
+use tracing::{debug, info};
 
 const BACKPRESSURE_MS_PER_CANDIDATE: u64 = 2;
 
@@ -112,6 +114,49 @@ impl DnsCacheMaintenance {
             Ok(_) => Ok(false),
             Err(e) => Err(e),
         }
+    }
+
+    pub fn start_stale_listener(
+        cache: Arc<DnsCache>,
+        resolver: Arc<dyn DnsResolver>,
+        query_log: Option<Arc<dyn QueryLogRepository>>,
+        mut rx: mpsc::Receiver<(CompactString, RecordType)>,
+    ) {
+        tokio::spawn(async move {
+            loop {
+                match rx.recv().await {
+                    Some((domain, record_type)) => {
+                        match Self::refresh_entry(
+                            &cache,
+                            &resolver,
+                            &query_log,
+                            &domain,
+                            &record_type,
+                        )
+                        .await
+                        {
+                            Ok(true) => {
+                                debug!(
+                                    domain = %domain,
+                                    record_type = %record_type,
+                                    "Stale entry refreshed immediately"
+                                );
+                            }
+                            Ok(false) => {
+                                cache.reset_refreshing(&domain, &record_type);
+                            }
+                            Err(_) => {
+                                cache.reset_refreshing(&domain, &record_type);
+                            }
+                        }
+                    }
+                    None => {
+                        info!("Stale refresh listener: channel closed, shutting down");
+                        break;
+                    }
+                }
+            }
+        });
     }
 }
 

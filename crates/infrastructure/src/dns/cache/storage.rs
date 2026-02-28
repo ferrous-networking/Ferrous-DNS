@@ -6,12 +6,14 @@ use super::l1::{l1_clear, l1_get, l1_insert};
 use super::negative_cache::NegativeDnsCache;
 use super::port::DnsCacheAccess;
 use super::{CacheMetrics, CachedData, CachedRecord, DnssecStatus};
+use compact_str::CompactString;
 use dashmap::{DashMap, DashSet};
 use ferrous_dns_domain::RecordType;
 use rustc_hash::FxBuildHasher;
 use std::collections::BinaryHeap;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering as AtomicOrdering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+use tokio::sync::mpsc;
 use tracing::{debug, info};
 
 struct EvictionCandidate {
@@ -81,6 +83,7 @@ pub struct DnsCache {
     permanent_keys: Arc<DashSet<CacheKey, FxBuildHasher>>,
     min_ttl: u32,
     max_ttl: u32,
+    stale_refresh_tx: OnceLock<mpsc::Sender<(CompactString, RecordType)>>,
 }
 
 impl DnsCache {
@@ -131,6 +134,7 @@ impl DnsCache {
             permanent_keys: Arc::new(DashSet::with_hasher(FxBuildHasher)),
             min_ttl: config.min_ttl,
             max_ttl: config.max_ttl,
+            stale_refresh_tx: OnceLock::new(),
         }
     }
 
@@ -195,7 +199,16 @@ impl DnsCache {
 
             if record.is_stale_usable_at_secs(now_secs) {
                 self.metrics.hits.fetch_add(1, AtomicOrdering::Relaxed);
+                self.metrics
+                    .stale_hits
+                    .fetch_add(1, AtomicOrdering::Relaxed);
                 record.record_hit();
+                if record.try_set_refreshing() {
+                    if let Some(tx) = self.stale_refresh_tx.get() {
+                        let _ = tx
+                            .try_send((CompactString::from(key.domain.as_str()), key.record_type));
+                    }
+                }
                 return Some((
                     record.data.clone(),
                     Some(record.dnssec_status),
@@ -367,6 +380,10 @@ impl DnsCache {
 
     pub fn access_window_secs(&self) -> u64 {
         self.access_window_secs
+    }
+
+    pub fn set_stale_refresh_sender(&self, tx: mpsc::Sender<(CompactString, RecordType)>) {
+        let _ = self.stale_refresh_tx.set(tx);
     }
 
     pub fn refresh_record(
@@ -591,6 +608,7 @@ impl ferrous_dns_application::ports::DnsCachePort for DnsCache {
             insertions: metrics.insertions.load(AtomicOrdering::Relaxed),
             evictions: metrics.evictions.load(AtomicOrdering::Relaxed),
             optimistic_refreshes: metrics.optimistic_refreshes.load(AtomicOrdering::Relaxed),
+            stale_hits: metrics.stale_hits.load(AtomicOrdering::Relaxed),
             lazy_deletions: metrics.lazy_deletions.load(AtomicOrdering::Relaxed),
             compactions: metrics.compactions.load(AtomicOrdering::Relaxed),
             batch_evictions: metrics.batch_evictions.load(AtomicOrdering::Relaxed),
