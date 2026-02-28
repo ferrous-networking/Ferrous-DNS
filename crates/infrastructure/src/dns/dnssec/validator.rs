@@ -131,9 +131,10 @@ impl DnssecValidator {
 
         let start = std::time::Instant::now();
 
+        let domain_arc: Arc<str> = Arc::from(domain);
         let upstream_result = self
             .pool_manager
-            .query(domain, &record_type, self.timeout_ms, true)
+            .query(&domain_arc, &record_type, self.timeout_ms, true)
             .await?;
 
         debug!(
@@ -240,9 +241,10 @@ impl DnssecValidator {
     pub async fn has_dnssec(&self, domain: &str) -> Result<bool, DomainError> {
         debug!(domain = %domain, "Checking DNSSEC availability");
 
+        let domain_arc: Arc<str> = Arc::from(domain);
         let result = self
             .pool_manager
-            .query(domain, &RecordType::DS, self.timeout_ms, true)
+            .query(&domain_arc, &RecordType::DS, self.timeout_ms, true)
             .await;
 
         match result {
@@ -330,6 +332,11 @@ impl DnssecValidator {
 
         let crypto_verifier = SignatureVerifier;
 
+        let now_secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as u32)
+            .unwrap_or(0);
+
         for rrsig in &rrsigs {
             let zone = &rrsig.signer_name;
             let Some(zone_keys) = self.chain_verifier.get_zone_keys(zone) else {
@@ -350,8 +357,8 @@ impl DnssecValidator {
                     }
                 });
 
-            for key in zone_keys {
-                match crypto_verifier.verify_rrsig(rrsig, key, &owner, &data_records) {
+            for key in zone_keys.iter() {
+                match crypto_verifier.verify_rrsig(rrsig, key, &owner, &data_records, now_secs) {
                     Ok(true) => {
                         debug!(
                             domain = %domain,
