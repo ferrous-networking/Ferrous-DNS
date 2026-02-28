@@ -10,6 +10,7 @@ use ferrous_dns_domain::{
     Config, DnsProtocol, DomainError, RecordType, UpstreamPool, UpstreamStrategy,
 };
 use smallvec::SmallVec;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, info, warn};
@@ -25,6 +26,7 @@ struct PoolWithStrategy {
     strategy: Strategy,
     server_protocols: Vec<DnsProtocol>,
     name_arc: Arc<str>,
+    server_displays: HashMap<String, Arc<str>>,
 }
 
 impl PoolManager {
@@ -61,11 +63,20 @@ impl PoolManager {
             let expanded = Self::expand_hostnames(parsed).await;
 
             let name_arc: Arc<str> = Arc::from(pool.name.as_str());
+            let server_displays: HashMap<String, Arc<str>> = expanded
+                .iter()
+                .map(|p| {
+                    let s = p.to_string();
+                    let arc: Arc<str> = Arc::from(s.as_str());
+                    (s, arc)
+                })
+                .collect();
             pools_with_strategy.push(PoolWithStrategy {
                 config: pool,
                 strategy,
                 server_protocols: expanded,
                 name_arc,
+                server_displays,
             });
         }
         pools_with_strategy.sort_by_key(|p| p.config.priority);
@@ -195,6 +206,7 @@ impl PoolManager {
                 dnssec_ok,
                 emitter: &self.emitter,
                 pool_name: &pool.name_arc,
+                server_displays: &pool.server_displays,
             };
 
             match pool.strategy.query_refs(&ctx).await {

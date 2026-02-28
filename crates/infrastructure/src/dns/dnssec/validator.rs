@@ -182,6 +182,52 @@ impl DnssecValidator {
         Ok(response)
     }
 
+    pub async fn validate_with_message(
+        &mut self,
+        domain: &str,
+        record_type: RecordType,
+        message: &hickory_proto::op::Message,
+    ) -> Result<ValidatedResponse, DomainError> {
+        debug!(
+            domain = %domain,
+            record_type = ?record_type,
+            "Starting DNSSEC validation (pre-fetched response)"
+        );
+
+        let start = std::time::Instant::now();
+
+        let chain_domain =
+            Self::extract_signer_zone(message.answers()).unwrap_or_else(|| domain.to_owned());
+
+        let mut validation_status = self
+            .chain_verifier
+            .verify_chain(&chain_domain, record_type)
+            .await?;
+
+        if validation_status == ValidationResult::Secure {
+            let all_answers: Vec<Record> = message.answers().to_vec();
+            validation_status = self.verify_rrset_signatures(domain, &all_answers);
+        }
+
+        let elapsed = start.elapsed().as_millis() as u64;
+
+        debug!(
+            domain = %domain,
+            status = %validation_status.as_str(),
+            elapsed_ms = elapsed,
+            "DNSSEC validation completed (pre-fetched)"
+        );
+
+        Ok(ValidatedResponse {
+            validation_status,
+            records: vec![],
+            domain: domain.to_string(),
+            record_type,
+            response_time_ms: elapsed,
+            upstream_server: None,
+        })
+    }
+
     pub async fn validate_simple(
         &mut self,
         domain: &str,

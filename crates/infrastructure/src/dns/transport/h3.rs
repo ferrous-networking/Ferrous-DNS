@@ -5,7 +5,7 @@ use dashmap::DashMap;
 use ferrous_dns_domain::DomainError;
 use std::net::SocketAddr;
 use std::sync::{Arc, LazyLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tracing::debug;
 
 type PoolKey = String;
@@ -19,6 +19,7 @@ static H3_QUIC_CLIENT_CONFIG: LazyLock<quinn::ClientConfig> = LazyLock::new(|| {
         .with_root_certificates(root_store)
         .with_no_client_auth();
     tls_config.alpn_protocols = vec![b"h3".to_vec()];
+    tls_config.resumption = rustls::client::Resumption::in_memory_sessions(64);
     let quic_config = quinn::crypto::rustls::QuicClientConfig::try_from(Arc::new(tls_config))
         .expect("valid QUIC TLS config for H3");
     quinn::ClientConfig::new(Arc::new(quic_config))
@@ -152,6 +153,8 @@ impl H3Transport {
         message_bytes: &[u8],
         timeout: Duration,
     ) -> Result<Bytes, DomainError> {
+        let deadline = Instant::now() + timeout;
+
         let request = http::Request::builder()
             .method("POST")
             .uri(https_url)
@@ -174,8 +177,9 @@ impl H3Transport {
                 ))
             })?;
 
+        let remaining = deadline.saturating_duration_since(Instant::now());
         tokio::time::timeout(
-            timeout,
+            remaining,
             stream.send_data(Bytes::copy_from_slice(message_bytes)),
         )
         .await
@@ -189,7 +193,8 @@ impl H3Transport {
             ))
         })?;
 
-        tokio::time::timeout(timeout, stream.finish())
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        tokio::time::timeout(remaining, stream.finish())
             .await
             .map_err(|_| DomainError::TransportTimeout {
                 server: https_url.to_string(),
@@ -201,7 +206,8 @@ impl H3Transport {
                 ))
             })?;
 
-        let response = tokio::time::timeout(timeout, stream.recv_response())
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        let response = tokio::time::timeout(remaining, stream.recv_response())
             .await
             .map_err(|_| DomainError::TransportTimeout {
                 server: https_url.to_string(),
@@ -222,18 +228,20 @@ impl H3Transport {
         }
 
         let mut body = BytesMut::new();
-        while let Some(mut chunk) = tokio::time::timeout(timeout, stream.recv_data())
-            .await
-            .map_err(|_| DomainError::TransportTimeout {
-                server: https_url.to_string(),
-            })?
-            .map_err(|e| {
-                DomainError::InvalidDomainName(format!(
-                    "Failed to read H3 body from {}: {}",
-                    https_url, e
-                ))
-            })?
-        {
+        while let Some(mut chunk) = {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            tokio::time::timeout(remaining, stream.recv_data())
+                .await
+                .map_err(|_| DomainError::TransportTimeout {
+                    server: https_url.to_string(),
+                })?
+                .map_err(|e| {
+                    DomainError::InvalidDomainName(format!(
+                        "Failed to read H3 body from {}: {}",
+                        https_url, e
+                    ))
+                })?
+        } {
             body.extend_from_slice(chunk.chunk());
             chunk.advance(chunk.remaining());
         }

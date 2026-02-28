@@ -24,6 +24,7 @@ pub struct QueryContext<'a> {
     pub dnssec_ok: bool,
     pub emitter: &'a QueryEventEmitter,
     pub pool_name: &'a Arc<str>,
+    pub server_displays: &'a std::collections::HashMap<String, Arc<str>>,
 }
 
 pub enum Strategy {

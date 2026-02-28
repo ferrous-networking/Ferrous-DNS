@@ -5,7 +5,7 @@ use dashmap::DashMap;
 use ferrous_dns_domain::{DomainError, UpstreamAddr};
 use std::net::SocketAddr;
 use std::sync::{Arc, LazyLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tracing::debug;
 
 type PoolKey = (SocketAddr, String);
@@ -18,6 +18,7 @@ static SHARED_QUIC_CLIENT_CONFIG: LazyLock<quinn::ClientConfig> = LazyLock::new(
         .with_root_certificates(root_store)
         .with_no_client_auth();
     tls_config.alpn_protocols = vec![b"doq".to_vec()];
+    tls_config.resumption = rustls::client::Resumption::in_memory_sessions(64);
     let quic_config = quinn::crypto::rustls::QuicClientConfig::try_from(Arc::new(tls_config))
         .expect("valid QUIC TLS config");
     quinn::ClientConfig::new(Arc::new(quic_config))
@@ -113,6 +114,8 @@ impl QuicTransport {
         timeout: Duration,
         server_addr: SocketAddr,
     ) -> Result<Vec<u8>, DomainError> {
+        let deadline = Instant::now() + timeout;
+
         let (mut send_stream, mut recv_stream) = tokio::time::timeout(timeout, conn.open_bi())
             .await
             .map_err(|_| DomainError::TransportTimeout {
@@ -125,8 +128,9 @@ impl QuicTransport {
                 ))
             })?;
 
+        let remaining = deadline.saturating_duration_since(Instant::now());
         tokio::time::timeout(
-            timeout,
+            remaining,
             send_with_length_prefix(&mut send_stream, message_bytes),
         )
         .await
@@ -141,7 +145,8 @@ impl QuicTransport {
             ))
         })?;
 
-        tokio::time::timeout(timeout, read_with_length_prefix(&mut recv_stream))
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        tokio::time::timeout(remaining, read_with_length_prefix(&mut recv_stream))
             .await
             .map_err(|_| DomainError::TransportTimeout {
                 server: server_addr.to_string(),

@@ -34,7 +34,10 @@ impl DnsResolver for MockNegativeResolver {
             upstream_server: None,
             upstream_pool: None,
             min_ttl: None,
-            authority_records: self.authority_records.clone(),
+            authority_data: Some(
+                Arc::new(self.authority_records.clone()) as Arc<dyn std::any::Any + Send + Sync>
+            ),
+            raw_upstream_data: None,
         })
     }
 }

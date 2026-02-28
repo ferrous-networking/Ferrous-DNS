@@ -93,8 +93,12 @@ impl DnsServerHandler {
         }
 
         if addresses.is_empty() {
-            for record in resolution.authority_records {
-                resp.add_name_server(record);
+            if let Some(ref data) = resolution.authority_data {
+                if let Some(records) = data.downcast_ref::<Vec<Record>>() {
+                    for record in records {
+                        resp.add_name_server(record.clone());
+                    }
+                }
             }
         } else {
             let record_name = Name::from_str(domain).unwrap_or_else(|_| Name::root());
@@ -174,7 +178,12 @@ impl RequestHandler for DnsServerHandler {
             let mut header = *request.header();
             header.set_message_type(MessageType::Response);
             header.set_recursion_available(true);
-            let authority = resolution.authority_records;
+            let empty_records: Vec<Record> = Vec::new();
+            let authority = resolution
+                .authority_data
+                .as_ref()
+                .and_then(|d| d.downcast_ref::<Vec<Record>>())
+                .unwrap_or(&empty_records);
             let response = builder.build(header, &[], authority.iter(), &[], &[]);
             return match response_handle.send_response(response).await {
                 Ok(info) => info,

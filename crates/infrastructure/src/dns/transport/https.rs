@@ -1,5 +1,6 @@
 use super::{DnsTransport, TransportResponse};
 use async_trait::async_trait;
+use dashmap::DashMap;
 use ferrous_dns_domain::DomainError;
 use std::net::SocketAddr;
 use std::sync::LazyLock;
@@ -15,6 +16,8 @@ static SHARED_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
         .unwrap_or_else(|_| reqwest::Client::new())
 });
 
+static HTTPS_CLIENT_POOL: LazyLock<DashMap<String, reqwest::Client>> = LazyLock::new(DashMap::new);
+
 const DNS_MESSAGE_CONTENT_TYPE: &str = "application/dns-message";
 
 pub struct HttpsTransport {
@@ -27,19 +30,24 @@ impl HttpsTransport {
         let client = if resolved_addrs.is_empty() {
             SHARED_CLIENT.clone()
         } else {
-            Self::build_client_with_resolved(&hostname, &resolved_addrs)
+            Self::get_or_create_client(&hostname, &resolved_addrs)
         };
         Self { url, client }
     }
 
-    fn build_client_with_resolved(hostname: &str, addrs: &[SocketAddr]) -> reqwest::Client {
-        reqwest::Client::builder()
-            .use_rustls_tls()
-            .pool_max_idle_per_host(4)
-            .http2_prior_knowledge()
-            .resolve_to_addrs(hostname, addrs)
-            .build()
-            .unwrap_or_else(|_| SHARED_CLIENT.clone())
+    fn get_or_create_client(hostname: &str, addrs: &[SocketAddr]) -> reqwest::Client {
+        HTTPS_CLIENT_POOL
+            .entry(hostname.to_string())
+            .or_insert_with(|| {
+                reqwest::Client::builder()
+                    .use_rustls_tls()
+                    .pool_max_idle_per_host(4)
+                    .http2_prior_knowledge()
+                    .resolve_to_addrs(hostname, addrs)
+                    .build()
+                    .unwrap_or_else(|_| SHARED_CLIENT.clone())
+            })
+            .clone()
     }
 }
 

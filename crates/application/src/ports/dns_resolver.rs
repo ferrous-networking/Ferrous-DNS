@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use ferrous_dns_domain::{DnsQuery, DomainError};
-use hickory_proto::rr::Record;
+use std::any::Any;
 use std::net::IpAddr;
 use std::sync::{Arc, LazyLock};
 
@@ -16,7 +16,8 @@ pub struct DnsResolution {
     pub upstream_server: Option<Arc<str>>,
     pub upstream_pool: Option<Arc<str>>,
     pub min_ttl: Option<u32>,
-    pub authority_records: Vec<Record>,
+    pub authority_data: Option<Arc<dyn Any + Send + Sync>>,
+    pub raw_upstream_data: Option<Arc<dyn Any + Send + Sync>>,
 }
 
 impl DnsResolution {
@@ -30,7 +31,8 @@ impl DnsResolution {
             upstream_server: None,
             upstream_pool: None,
             min_ttl: None,
-            authority_records: vec![],
+            authority_data: None,
+            raw_upstream_data: None,
         }
     }
 
@@ -48,7 +50,8 @@ impl DnsResolution {
             upstream_server: None,
             upstream_pool: None,
             min_ttl: None,
-            authority_records: vec![],
+            authority_data: None,
+            raw_upstream_data: None,
         }
     }
 }

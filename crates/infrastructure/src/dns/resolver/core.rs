@@ -85,7 +85,9 @@ impl CoreResolver {
                         upstream_server: Some(Arc::clone(server)),
                         upstream_pool: None,
                         min_ttl: response.min_ttl,
-                        authority_records: response.authority_records,
+                        authority_data: Some(Arc::new(response.authority_records)
+                            as Arc<dyn std::any::Any + Send + Sync>),
+                        raw_upstream_data: None,
                     });
                 }
                 Ok(_) => {
@@ -130,6 +132,10 @@ impl DnsResolver for CoreResolver {
 
         let addresses = Arc::new(result.response.addresses);
         let upstream_server = Some(result.server_display);
+        let cname_chain = result.response.cname_chain;
+        let min_ttl = result.response.min_ttl;
+        let authority_records = result.response.authority_records;
+        let raw_message = result.response.message;
 
         debug!(
             domain = %query.domain,
@@ -144,16 +150,17 @@ impl DnsResolver for CoreResolver {
             cache_hit: false,
             local_dns: false,
             dnssec_status: None,
-            cname_chain: result
-                .response
-                .cname_chain
+            cname_chain: cname_chain
                 .into_iter()
                 .map(|s| Arc::from(s.as_str()))
                 .collect::<Arc<[_]>>(),
             upstream_server,
             upstream_pool: Some(result.pool_name),
-            min_ttl: result.response.min_ttl,
-            authority_records: result.response.authority_records,
+            min_ttl,
+            authority_data: Some(
+                Arc::new(authority_records) as Arc<dyn std::any::Any + Send + Sync>
+            ),
+            raw_upstream_data: Some(Arc::new(raw_message) as Arc<dyn std::any::Any + Send + Sync>),
         })
     }
 }

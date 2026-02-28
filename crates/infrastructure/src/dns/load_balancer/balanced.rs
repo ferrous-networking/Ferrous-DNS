@@ -33,6 +33,7 @@ impl BalancedStrategy {
                 ctx.dnssec_ok,
                 ctx.emitter,
                 ctx.pool_name,
+                ctx.server_displays,
             )
             .await
             {

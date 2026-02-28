@@ -2,6 +2,7 @@ use crate::dns::events::{QueryEvent, QueryEventEmitter};
 use crate::dns::forwarding::{DnsResponse, MessageBuilder, ResponseParser};
 use crate::dns::transport;
 use ferrous_dns_domain::{DnsProtocol, DomainError, RecordType};
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -14,6 +15,15 @@ pub struct QueryAttemptResult {
     pub server_display: Arc<str>,
 }
 
+fn get_or_make_display(protocol: &DnsProtocol, cache: &HashMap<String, Arc<str>>) -> Arc<str> {
+    let key = protocol.to_string();
+    if let Some(cached) = cache.get(&key) {
+        return Arc::clone(cached);
+    }
+    Arc::from(key)
+}
+
+#[allow(clippy::too_many_arguments)]
 pub async fn query_server(
     protocol: &DnsProtocol,
     domain: &str,
@@ -22,6 +32,7 @@ pub async fn query_server(
     dnssec_ok: bool,
     emitter: &QueryEventEmitter,
     pool_name: &Arc<str>,
+    server_displays: &HashMap<String, Arc<str>>,
 ) -> Result<QueryAttemptResult, DomainError> {
     let start = Instant::now();
     let timeout_duration = Duration::from_millis(timeout_ms);
@@ -36,7 +47,7 @@ pub async fn query_server(
 
     let response_time_us = start.elapsed().as_micros() as u64;
     let domain_arc: Arc<str> = Arc::from(domain);
-    let server_arc: Arc<str> = Arc::from(protocol.to_string());
+    let server_arc = get_or_make_display(protocol, server_displays);
     emitter.emit(QueryEvent {
         domain: Arc::clone(&domain_arc),
         record_type: *record_type,
@@ -65,7 +76,7 @@ pub async fn query_server(
             let tcp_dns_response = ResponseParser::parse(&tcp_response.bytes)?;
 
             let tcp_response_time_us = tcp_start.elapsed().as_micros() as u64;
-            let tcp_server_arc: Arc<str> = Arc::from(tcp_protocol.to_string());
+            let tcp_server_arc = get_or_make_display(&tcp_protocol, server_displays);
             emitter.emit(QueryEvent {
                 domain: domain_arc,
                 record_type: *record_type,

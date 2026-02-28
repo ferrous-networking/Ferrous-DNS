@@ -91,7 +91,8 @@ impl CachedResolver {
                         upstream_server: None,
                         upstream_pool: None,
                         min_ttl: remaining_ttl,
-                        authority_records: vec![],
+                        authority_data: None,
+                        raw_upstream_data: None,
                     },
                     CachedData::CanonicalName(_) => DnsResolution {
                         addresses: Arc::clone(&EMPTY_ADDRESSES),
@@ -102,7 +103,8 @@ impl CachedResolver {
                         upstream_server: None,
                         upstream_pool: None,
                         min_ttl: remaining_ttl,
-                        authority_records: vec![],
+                        authority_data: None,
+                        raw_upstream_data: None,
                     },
                     CachedData::NegativeResponse => DnsResolution {
                         addresses: Arc::clone(&EMPTY_ADDRESSES),
@@ -113,7 +115,8 @@ impl CachedResolver {
                         upstream_server: None,
                         upstream_pool: None,
                         min_ttl: remaining_ttl,
-                        authority_records: vec![],
+                        authority_data: None,
+                        raw_upstream_data: None,
                     },
                 }
             },
@@ -135,7 +138,14 @@ impl CachedResolver {
 
     fn store_in_cache(&self, query: &DnsQuery, resolution: &DnsResolution) {
         if resolution.addresses.is_empty() {
-            self.insert_negative(query, &resolution.authority_records);
+            let authority_records = resolution
+                .authority_data
+                .as_ref()
+                .and_then(|data| data.downcast_ref::<Vec<Record>>());
+            self.insert_negative(
+                query,
+                authority_records.map(|v| v.as_slice()).unwrap_or(&[]),
+            );
         } else {
             let addresses = Arc::clone(&resolution.addresses);
             let dnssec_status = resolution
@@ -193,7 +203,8 @@ impl CachedResolver {
                     upstream_server: None,
                     upstream_pool: None,
                     min_ttl: result.min_ttl,
-                    authority_records: vec![],
+                    authority_data: None,
+                    raw_upstream_data: None,
                 });
             }
         }
@@ -208,7 +219,8 @@ impl CachedResolver {
                 upstream_server: None,
                 upstream_pool: None,
                 min_ttl: result.min_ttl,
-                authority_records: vec![],
+                authority_data: None,
+                raw_upstream_data: None,
             });
         }
 

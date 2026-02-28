@@ -3,10 +3,13 @@ use super::{DnsTransport, TransportResponse};
 use async_trait::async_trait;
 use ferrous_dns_domain::{DomainError, UpstreamAddr};
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 use tokio::net::UdpSocket;
 use tracing::{debug, warn};
+
+static DEFAULT_UDP_POOL: LazyLock<Arc<UdpSocketPool>> =
+    LazyLock::new(|| Arc::new(UdpSocketPool::new(4, 64)));
 
 pub fn validate_response_id(
     query_bytes: &[u8],
@@ -63,7 +66,7 @@ impl UdpTransport {
     pub fn new(upstream_addr: UpstreamAddr) -> Self {
         Self {
             upstream_addr,
-            pool: None,
+            pool: Some(Arc::clone(&DEFAULT_UDP_POOL)),
         }
     }
 

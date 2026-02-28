@@ -752,7 +752,6 @@ dependencies = [
  "async-trait",
  "chrono",
  "ferrous-dns-domain",
- "hickory-proto",
  "ipnetwork",
  "libc",
  "lru",
@@ -769,7 +768,6 @@ dependencies = [
  "serde",
  "thiserror",
  "toml",
- "toml_edit",
 ]
 
 [[package]]
@@ -816,6 +814,7 @@ dependencies = [
  "time",
  "tokio",
  "tokio-rustls",
+ "toml_edit",
  "tracing",
  "webpki-roots 1.0.6",
 ]

@@ -84,7 +84,13 @@ impl ChainVerifier {
         let labels = Self::split_domain(domain);
         debug!(labels = ?labels, "Domain labels");
 
-        let root_anchor = self.trust_store.get_anchor(".").unwrap();
+        let root_anchor = match self.trust_store.get_anchor(".") {
+            Some(anchor) => anchor,
+            None => {
+                warn!("Root trust anchor disappeared during validation");
+                return Ok(ValidationResult::Indeterminate);
+            }
+        };
         self.validated_keys
             .insert(".".to_string(), vec![root_anchor.dnskey.clone()]);
 

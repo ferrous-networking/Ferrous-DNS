@@ -36,7 +36,8 @@ impl Default for ServerHealth {
 }
 
 pub struct HealthChecker {
-    health_map: Arc<DashMap<String, ServerHealth>>,
+    health_map: Arc<DashMap<Arc<str>, ServerHealth>>,
+    display_names: DashMap<String, Arc<str>>,
     failure_threshold: u8,
     success_threshold: u8,
 }
@@ -45,9 +46,20 @@ impl HealthChecker {
     pub fn new(failure_threshold: u8, success_threshold: u8) -> Self {
         Self {
             health_map: Arc::new(DashMap::new()),
+            display_names: DashMap::new(),
             failure_threshold,
             success_threshold,
         }
+    }
+
+    fn get_display_name(&self, protocol: &DnsProtocol) -> Arc<str> {
+        let key = protocol.to_string();
+        if let Some(cached) = self.display_names.get(&key) {
+            return Arc::clone(cached.value());
+        }
+        let arc: Arc<str> = Arc::from(key.as_str());
+        self.display_names.insert(key, Arc::clone(&arc));
+        arc
     }
 
     pub async fn run(
@@ -82,7 +94,7 @@ impl HealthChecker {
     }
 
     async fn check_server(&self, protocol: DnsProtocol, timeout_ms: u64) {
-        let server_str = protocol.to_string();
+        let server_str = self.get_display_name(&protocol);
         let start = std::time::Instant::now();
         let timeout_duration = Duration::from_millis(timeout_ms);
 
@@ -141,8 +153,8 @@ impl HealthChecker {
         }
     }
 
-    fn mark_healthy(&self, server: &str, latency_ms: u64) {
-        let mut entry = self.health_map.entry(server.to_string()).or_default();
+    fn mark_healthy(&self, server: &Arc<str>, latency_ms: u64) {
+        let mut entry = self.health_map.entry(Arc::clone(server)).or_default();
         entry.consecutive_failures = 0;
         entry.consecutive_successes = entry.consecutive_successes.saturating_add(1);
         entry.last_check_latency_ms = Some(latency_ms);
@@ -155,8 +167,8 @@ impl HealthChecker {
         }
     }
 
-    fn mark_failed(&self, server: &str, latency_ms: Option<u64>, error: Option<String>) {
-        let mut entry = self.health_map.entry(server.to_string()).or_default();
+    fn mark_failed(&self, server: &Arc<str>, latency_ms: Option<u64>, error: Option<String>) {
+        let mut entry = self.health_map.entry(Arc::clone(server)).or_default();
         entry.consecutive_successes = 0;
         entry.consecutive_failures = entry.consecutive_failures.saturating_add(1);
         entry.last_check_latency_ms = latency_ms;
@@ -170,9 +182,9 @@ impl HealthChecker {
     }
 
     pub fn is_healthy(&self, protocol: &DnsProtocol) -> bool {
-        let server_str = protocol.to_string();
+        let server_arc = self.get_display_name(protocol);
         self.health_map
-            .get(&server_str)
+            .get(&server_arc)
             .map(|h| h.status == ServerStatus::Healthy)
             .unwrap_or(true)
     }
@@ -186,15 +198,15 @@ impl HealthChecker {
     }
 
     pub fn get_status(&self, protocol: &DnsProtocol) -> ServerStatus {
-        let server_str = protocol.to_string();
+        let server_arc = self.get_display_name(protocol);
         self.health_map
-            .get(&server_str)
+            .get(&server_arc)
             .map(|h| h.status)
             .unwrap_or(ServerStatus::Unknown)
     }
 
     pub fn get_health_info(&self, protocol: &DnsProtocol) -> Option<ServerHealth> {
-        let server_str = protocol.to_string();
-        self.health_map.get(&server_str).map(|h| h.clone())
+        let server_arc = self.get_display_name(protocol);
+        self.health_map.get(&server_arc).map(|h| h.clone())
     }
 }
