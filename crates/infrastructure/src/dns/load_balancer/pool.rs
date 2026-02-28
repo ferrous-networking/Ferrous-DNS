@@ -109,9 +109,10 @@ impl PoolManager {
                             Ok(addrs) => {
                                 let limited = Self::limit_resolved_addrs(addrs);
                                 info!(
-                                    "{} resolved to {} upstream servers (limited to 1 IPv4 + 1 IPv6)",
+                                    "{} resolved to {} upstream servers (limited to {} per family)",
                                     hostname,
-                                    limited.len()
+                                    limited.len(),
+                                    4
                                 );
                                 for addr in &limited {
                                     let resolved = protocol.with_resolved_addr(*addr);
@@ -162,19 +163,23 @@ impl PoolManager {
     }
 
     fn limit_resolved_addrs(addrs: Vec<SocketAddr>) -> Vec<SocketAddr> {
-        let mut ipv4 = None;
-        let mut ipv6 = None;
-        for addr in addrs {
-            if addr.is_ipv4() && ipv4.is_none() {
-                ipv4 = Some(addr);
-            } else if addr.is_ipv6() && ipv6.is_none() {
-                ipv6 = Some(addr);
-            }
-            if ipv4.is_some() && ipv6.is_some() {
-                break;
-            }
-        }
-        ipv4.into_iter().chain(ipv6).collect()
+        const MAX_ADDRS_PER_FAMILY: usize = 4;
+        let mut ipv4_count = 0usize;
+        let mut ipv6_count = 0usize;
+        addrs
+            .into_iter()
+            .filter(|addr| {
+                if addr.is_ipv4() && ipv4_count < MAX_ADDRS_PER_FAMILY {
+                    ipv4_count += 1;
+                    true
+                } else if addr.is_ipv6() && ipv6_count < MAX_ADDRS_PER_FAMILY {
+                    ipv6_count += 1;
+                    true
+                } else {
+                    false
+                }
+            })
+            .collect()
     }
 
     fn extract_port_from_hostname(hostname: &str, default: u16) -> u16 {
