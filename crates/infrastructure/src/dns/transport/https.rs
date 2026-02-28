@@ -17,28 +17,36 @@ static SHARED_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
         .unwrap_or_else(|_| reqwest::Client::new())
 });
 
-static HTTPS_CLIENT_POOL: LazyLock<DashMap<String, reqwest::Client>> = LazyLock::new(DashMap::new);
+const CLIENT_TTL: Duration = Duration::from_secs(300);
+
+static HTTPS_CLIENT_POOL: LazyLock<DashMap<String, (reqwest::Client, Instant)>> =
+    LazyLock::new(DashMap::new);
 
 const DNS_MESSAGE_CONTENT_TYPE: &str = "application/dns-message";
 
 pub struct HttpsTransport {
     url: String,
-    client: reqwest::Client,
+    hostname: String,
+    resolved_addrs: Vec<SocketAddr>,
 }
 
 impl HttpsTransport {
     pub fn new(url: String, hostname: String, resolved_addrs: Vec<SocketAddr>) -> Self {
-        let client = if resolved_addrs.is_empty() {
-            SHARED_CLIENT.clone()
-        } else {
-            Self::get_or_create_client(&hostname, &resolved_addrs)
-        };
-        Self { url, client }
+        Self {
+            url,
+            hostname,
+            resolved_addrs,
+        }
     }
 
     fn get_or_create_client(hostname: &str, addrs: &[SocketAddr]) -> reqwest::Client {
-        if let Some(client) = HTTPS_CLIENT_POOL.get(hostname) {
-            return client.clone();
+        if let Some(entry) = HTTPS_CLIENT_POOL.get(hostname) {
+            let (client, created_at) = entry.value();
+            if created_at.elapsed() < CLIENT_TTL {
+                return client.clone();
+            }
+            drop(entry);
+            HTTPS_CLIENT_POOL.remove(hostname);
         }
 
         let client = reqwest::Client::builder()
@@ -52,8 +60,9 @@ impl HttpsTransport {
 
         HTTPS_CLIENT_POOL
             .entry(hostname.to_string())
-            .or_insert(client)
+            .or_insert((client, Instant::now()))
             .clone()
+            .0
     }
 }
 
@@ -72,9 +81,15 @@ impl DnsTransport for HttpsTransport {
 
         let start = Instant::now();
 
+        let client = if self.resolved_addrs.is_empty() {
+            SHARED_CLIENT.clone()
+        } else {
+            Self::get_or_create_client(&self.hostname, &self.resolved_addrs)
+        };
+
         let response = tokio::time::timeout(
             timeout,
-            self.client
+            client
                 .post(&self.url)
                 .header("Content-Type", DNS_MESSAGE_CONTENT_TYPE)
                 .header("Accept", DNS_MESSAGE_CONTENT_TYPE)
