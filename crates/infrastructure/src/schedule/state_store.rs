@@ -3,23 +3,13 @@ use ferrous_dns_application::ports::ScheduleStatePort;
 use ferrous_dns_domain::GroupOverride;
 use rustc_hash::FxBuildHasher;
 
-/// The expiry field attached to each `GroupOverride` entry in the store.
-/// `None` means the override has no deadline (used by schedule-derived overrides).
-/// `Some(t)` means the override expires at monotonic timestamp `t` in seconds
-/// (used by timed bypass overrides written by the future timed bypass feature).
 type Entry = (GroupOverride, Option<u64>);
 
-/// In-memory, lock-free store of active DNS override states per group.
-///
-/// Backed by a `DashMap` with FxBuildHasher for minimal overhead on hot reads.
-/// `is_empty()` is O(1) — used by `BlockFilterEngine::check()` to skip the map
-/// lookup entirely when no schedules are configured.
 pub struct ScheduleStateStore {
     overrides: DashMap<i64, Entry, FxBuildHasher>,
 }
 
 impl ScheduleStateStore {
-    /// Creates a new empty `ScheduleStateStore`.
     pub fn new() -> Self {
         Self {
             overrides: DashMap::with_hasher(FxBuildHasher),

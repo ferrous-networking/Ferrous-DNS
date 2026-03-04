@@ -4,14 +4,12 @@ use tracing::{info, instrument};
 
 use crate::ports::{GroupRepository, ScheduleProfileRepository};
 
-/// Associates or removes a schedule profile from a group.
 pub struct AssignScheduleProfileUseCase {
     repo: Arc<dyn ScheduleProfileRepository>,
     group_repo: Arc<dyn GroupRepository>,
 }
 
 impl AssignScheduleProfileUseCase {
-    /// Creates a new `AssignScheduleProfileUseCase`.
     pub fn new(
         repo: Arc<dyn ScheduleProfileRepository>,
         group_repo: Arc<dyn GroupRepository>,
@@ -19,10 +17,6 @@ impl AssignScheduleProfileUseCase {
         Self { repo, group_repo }
     }
 
-    /// Assigns a schedule profile to a group, replacing any existing assignment.
-    ///
-    /// Returns [`DomainError::GroupNotFound`] if the group does not exist.
-    /// Returns [`DomainError::ScheduleProfileNotFound`] if the profile does not exist.
     #[instrument(skip(self))]
     pub async fn assign(&self, group_id: i64, profile_id: i64) -> Result<(), DomainError> {
         self.group_repo
@@ -42,10 +36,6 @@ impl AssignScheduleProfileUseCase {
         Ok(())
     }
 
-    /// Removes the schedule profile assignment from a group.
-    ///
-    /// No-op if the group has no profile assigned.
-    /// Returns [`DomainError::GroupNotFound`] if the group does not exist.
     #[instrument(skip(self))]
     pub async fn unassign(&self, group_id: i64) -> Result<(), DomainError> {
         self.group_repo

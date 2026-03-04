@@ -22,13 +22,9 @@ pub struct UpdateScheduleProfileRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct AddTimeSlotRequest {
-    /// Day bitmask: bit0=Mon, bit6=Sun, range 1–127
     pub days: u8,
-    /// "HH:MM"
     pub start_time: String,
-    /// "HH:MM"
     pub end_time: String,
-    /// "block_all" | "allow_all"
     pub action: String,
 }
 

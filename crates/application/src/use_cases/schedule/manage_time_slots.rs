@@ -4,20 +4,15 @@ use tracing::{info, instrument};
 
 use crate::ports::ScheduleProfileRepository;
 
-/// Manages time slots within a schedule profile.
 pub struct ManageTimeSlotsUseCase {
     repo: Arc<dyn ScheduleProfileRepository>,
 }
 
 impl ManageTimeSlotsUseCase {
-    /// Creates a new `ManageTimeSlotsUseCase`.
     pub fn new(repo: Arc<dyn ScheduleProfileRepository>) -> Self {
         Self { repo }
     }
 
-    /// Adds a time slot to the given profile.
-    ///
-    /// Returns [`DomainError::ScheduleProfileNotFound`] if the profile does not exist.
     #[instrument(skip(self))]
     pub async fn add_slot(
         &self,
@@ -53,9 +48,6 @@ impl ManageTimeSlotsUseCase {
         Ok(slot)
     }
 
-    /// Deletes a time slot by id.
-    ///
-    /// Returns [`DomainError::TimeSlotNotFound`] if the slot does not exist.
     #[instrument(skip(self))]
     pub async fn delete_slot(&self, slot_id: i64) -> Result<(), DomainError> {
         self.repo.delete_slot(slot_id).await?;

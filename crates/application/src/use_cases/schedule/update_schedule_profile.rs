@@ -4,13 +4,11 @@ use tracing::{info, instrument};
 
 use crate::ports::ScheduleProfileRepository;
 
-/// Updates an existing schedule profile.
 pub struct UpdateScheduleProfileUseCase {
     repo: Arc<dyn ScheduleProfileRepository>,
 }
 
 impl UpdateScheduleProfileUseCase {
-    /// Creates a new `UpdateScheduleProfileUseCase`.
     pub fn new(repo: Arc<dyn ScheduleProfileRepository>) -> Self {
         Self { repo }
     }

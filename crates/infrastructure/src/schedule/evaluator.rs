@@ -1,9 +1,3 @@
-/// Re-exports `evaluate_slots` from the domain crate.
-///
-/// The function is a pure computation that depends only on domain types, so it
-/// lives in `ferrous_dns_domain`. This module keeps its unit tests here for
-/// proximity with the infrastructure layer and re-exports the function so that
-/// callers within this crate can import it with a short path.
 pub use ferrous_dns_domain::evaluate_slots;
 
 #[cfg(test)]

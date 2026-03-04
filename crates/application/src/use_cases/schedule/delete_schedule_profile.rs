@@ -4,16 +4,11 @@ use tracing::{info, instrument};
 
 use crate::ports::ScheduleProfileRepository;
 
-/// Deletes a schedule profile along with its time slots and group assignments.
-///
-/// The deletion cascades via the database foreign keys, so any group that had
-/// this profile assigned will revert to having no schedule.
 pub struct DeleteScheduleProfileUseCase {
     repo: Arc<dyn ScheduleProfileRepository>,
 }
 
 impl DeleteScheduleProfileUseCase {
-    /// Creates a new `DeleteScheduleProfileUseCase`.
     pub fn new(repo: Arc<dyn ScheduleProfileRepository>) -> Self {
         Self { repo }
     }

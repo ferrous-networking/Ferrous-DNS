@@ -14,8 +14,6 @@ pub struct ScheduleEvaluatorJob {
     state: Arc<dyn ScheduleStatePort>,
     interval_secs: u64,
     shutdown: CancellationToken,
-    /// Group IDs that currently have a schedule-derived override in the state store.
-    /// Updated every tick to detect de-assigned groups whose overrides must be cleared.
     active_groups: Mutex<HashSet<i64>>,
 }
 
@@ -77,7 +75,6 @@ impl ScheduleEvaluatorJob {
 
         let current_group_ids: HashSet<i64> = assignments.iter().map(|(gid, _)| *gid).collect();
 
-        // Clear overrides for groups that no longer have a schedule assignment.
         {
             let mut prev = self.active_groups.lock().await;
             for stale_id in prev.difference(&current_group_ids) {
@@ -127,7 +124,6 @@ impl ScheduleEvaluatorJob {
             };
 
             let now = chrono::Utc::now().with_timezone(&tz);
-            // bit0=Mon(1)..bit6=Sun(7) — chrono weekday(): Mon=0..Sun=6
             let weekday_bit = 1u8 << now.weekday().num_days_from_monday();
             let now_time = format!("{:02}:{:02}", now.hour(), now.minute());
 
