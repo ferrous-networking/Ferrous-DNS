@@ -539,7 +539,6 @@ pub async fn compile_block_index(
     })
 }
 
-
 async fn build_allowlist_index(
     pool: &SqlitePool,
     client: &reqwest::Client,
