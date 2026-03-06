@@ -60,8 +60,7 @@
 
 - [x] Pi-hole compatible API
 - [x] Performance benchmarks vs. competitors
-- [ ] Cache stats UI (hit rate, miss rate, per-domain flush)
-- [ ] Dashbodar Setting system status, pools dns status, cache ouverview, system information, kernel, uptime, load etc..
+- [x] Dashbodar Setting system status, pools dns status, cache ouverview, system information, kernel, uptime, load etc..
 
 ### 🎯 v0.7.0 - Security
 
