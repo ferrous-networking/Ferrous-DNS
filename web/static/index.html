@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <title>Redirecting...</title>
     <script src="/ferrous-config.js"></script>
+    <script src="/static/shared.js"></script>
     <script>
-        const API_BASE = window.FERROUS_API_BASE || '/api';
         (async () => {
             try {
                 const res = await fetch(`${API_BASE}/auth/status`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.enabled) {
-                        const probe = await fetch(`${API_BASE}/health`);
+                        const probe = await apiFetch(`${API_BASE}/auth/sessions`);
                         if (probe.status === 401) {
                             window.location.href = '/login.html';
                             return;

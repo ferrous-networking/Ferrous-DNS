@@ -20,7 +20,7 @@ pub fn routes() -> Router<AppState> {
 async fn get_all_api_tokens(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<ApiTokenResponse>>, ApiError> {
-    let tokens = state.auth.get_api_tokens.get_all().await?;
+    let tokens = state.auth.get_api_tokens.execute().await?;
     debug!(count = tokens.len(), "API tokens retrieved");
     Ok(Json(
         tokens

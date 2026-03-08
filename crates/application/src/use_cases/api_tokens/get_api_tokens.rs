@@ -15,12 +15,7 @@ impl GetApiTokensUseCase {
     }
 
     #[instrument(skip(self))]
-    pub async fn get_all(&self) -> Result<Vec<ApiToken>, DomainError> {
+    pub async fn execute(&self) -> Result<Vec<ApiToken>, DomainError> {
         self.repo.get_all().await
-    }
-
-    #[instrument(skip(self))]
-    pub async fn get_by_id(&self, id: i64) -> Result<Option<ApiToken>, DomainError> {
-        self.repo.get_by_id(id).await
     }
 }

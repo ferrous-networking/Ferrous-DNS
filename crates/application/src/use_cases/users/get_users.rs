@@ -15,7 +15,7 @@ impl GetUsersUseCase {
     }
 
     #[instrument(skip(self))]
-    pub async fn get_all(&self) -> Result<Vec<User>, DomainError> {
+    pub async fn execute(&self) -> Result<Vec<User>, DomainError> {
         self.user_provider.get_all().await
     }
 }

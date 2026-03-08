@@ -1,4 +1,7 @@
+use std::fmt::Write;
 use std::sync::Arc;
+
+use ring::rand::SecureRandom;
 use tracing::{info, instrument, warn};
 
 use crate::ports::{PasswordHasher, SessionRepository, UserProvider};
@@ -57,18 +60,22 @@ impl LoginUseCase {
             return Err(DomainError::InvalidCredentials);
         }
 
-        let session_id = generate_session_id();
+        let session_id = generate_session_id()?;
+        let now = chrono::Utc::now();
+        let created_at = now.format("%Y-%m-%d %H:%M:%S").to_string();
         let expires_at = compute_expiry(remember_me, &self.auth_config);
 
-        let session = AuthSession::new(
-            Arc::from(session_id.as_str()),
-            user.username.clone(),
-            Arc::from(user.role.as_str()),
-            Arc::from(ip_address),
-            Arc::from(user_agent),
+        let session = AuthSession {
+            id: Arc::from(session_id.as_str()),
+            username: user.username.clone(),
+            role: user.role.clone(),
+            ip_address: Arc::from(ip_address),
+            user_agent: Arc::from(user_agent),
             remember_me,
+            last_seen_at: created_at.clone(),
+            created_at,
             expires_at,
-        );
+        };
 
         self.session_repo.create(&session).await?;
 
@@ -79,19 +86,27 @@ impl LoginUseCase {
         );
         Ok(session)
     }
+
+    /// Returns the `max_age` in seconds for the session cookie.
+    pub fn session_max_age(&self, remember_me: bool) -> i64 {
+        if remember_me {
+            i64::from(self.auth_config.remember_me_days) * 86400
+        } else {
+            i64::from(self.auth_config.session_ttl_hours) * 3600
+        }
+    }
 }
 
-fn generate_session_id() -> String {
-    use std::fmt::Write;
+fn generate_session_id() -> Result<String, DomainError> {
     let mut buf = [0u8; 32];
     ring::rand::SystemRandom::new()
         .fill(&mut buf)
-        .expect("CSPRNG fill failed");
+        .map_err(|_| DomainError::IoError("CSPRNG fill failed".to_string()))?;
     let mut hex = String::with_capacity(64);
     for byte in &buf {
-        write!(hex, "{byte:02x}").expect("hex write failed");
+        let _ = write!(hex, "{byte:02x}");
     }
-    hex
+    Ok(hex)
 }
 
 fn compute_expiry(remember_me: bool, config: &AuthConfig) -> String {
@@ -103,5 +118,3 @@ fn compute_expiry(remember_me: bool, config: &AuthConfig) -> String {
     let expires = chrono::Utc::now() + duration;
     expires.format("%Y-%m-%d %H:%M:%S").to_string()
 }
-
-use ring::rand::SecureRandom;

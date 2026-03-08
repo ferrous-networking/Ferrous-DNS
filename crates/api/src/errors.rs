@@ -46,13 +46,15 @@ impl IntoResponse for ApiError {
 
             DomainError::RateLimited => (StatusCode::TOO_MANY_REQUESTS, self.0.to_string()),
 
-            DomainError::DuplicateApiTokenName(_) | DomainError::DuplicateUsername(_) => {
+            DomainError::DuplicateApiTokenName(_)
+            | DomainError::DuplicateUsername(_)
+            | DomainError::PasswordAlreadyConfigured => {
                 (StatusCode::CONFLICT, self.0.to_string())
             }
 
-            DomainError::InvalidUsername(_) | DomainError::InvalidPassword(_) => {
-                (StatusCode::BAD_REQUEST, self.0.to_string())
-            }
+            DomainError::InvalidUsername(_)
+            | DomainError::InvalidPassword(_)
+            | DomainError::InvalidInput(_) => (StatusCode::BAD_REQUEST, self.0.to_string()),
 
             DomainError::GroupNotFound(_) => (StatusCode::NOT_FOUND, self.0.to_string()),
 

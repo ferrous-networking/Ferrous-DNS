@@ -36,30 +36,28 @@ impl SessionCleanupJob {
             "Starting session cleanup job"
         );
 
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(self.interval_secs));
-            loop {
-                tokio::select! {
-                    _ = self.shutdown.cancelled() => {
-                        info!("SessionCleanupJob: shutting down");
-                        break;
-                    }
-                    _ = interval.tick() => {
-                        match self.session_repo.delete_expired().await {
-                            Ok(count) => {
-                                if count > 0 {
-                                    info!(deleted = count, "Expired sessions cleaned up");
-                                } else {
-                                    debug!("No expired sessions to clean up");
-                                }
+        let mut interval = tokio::time::interval(Duration::from_secs(self.interval_secs));
+        loop {
+            tokio::select! {
+                _ = self.shutdown.cancelled() => {
+                    info!("SessionCleanupJob: shutting down");
+                    break;
+                }
+                _ = interval.tick() => {
+                    match self.session_repo.delete_expired().await {
+                        Ok(count) => {
+                            if count > 0 {
+                                info!(deleted = count, "Expired sessions cleaned up");
+                            } else {
+                                debug!("No expired sessions to clean up");
                             }
-                            Err(e) => {
-                                error!(error = %e, "Session cleanup failed");
-                            }
+                        }
+                        Err(e) => {
+                            error!(error = %e, "Session cleanup failed");
                         }
                     }
                 }
             }
-        });
+        }
     }
 }

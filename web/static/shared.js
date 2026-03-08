@@ -92,8 +92,8 @@ async function checkAuth() {
         if (!res.ok) return;
         const data = await res.json();
         if (!data.enabled) return;
-        // Auth is enabled — check if we have a valid session by probing a protected endpoint
-        const probe = await apiFetch(`${API_BASE}/health`);
+        // Auth is enabled — check if we have a valid session
+        const probe = await apiFetch(`${API_BASE}/auth/sessions`);
         if (probe.status === 401) {
             window.location.href = '/login.html';
         }
@@ -108,6 +108,7 @@ async function logout() {
     } catch (e) {
         console.error('Logout error:', e);
     }
+    localStorage.removeItem('ferrous_api_key');
     window.location.href = '/login.html';
 }
 

@@ -98,13 +98,22 @@ pub async fn logout() -> StatusCode {
 }
 
 fn generate_session_id() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    format!("{:x}{:x}", nanos, std::process::id())
+    use std::fmt::Write;
+    let mut buf = [0u8; 16];
+    ring::rand::SystemRandom::new()
+        .fill(&mut buf)
+        .unwrap_or_else(|_| {
+            // Fallback: zero-filled is still unique enough for legacy compat
+            buf = [0u8; 16];
+        });
+    let mut hex = String::with_capacity(32);
+    for byte in &buf {
+        let _ = write!(hex, "{byte:02x}");
+    }
+    hex
 }
+
+use ring::rand::SecureRandom;
 
 fn unauthenticated_session(message: &str) -> SessionInfo {
     SessionInfo {

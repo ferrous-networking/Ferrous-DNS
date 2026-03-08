@@ -17,6 +17,7 @@ bytes.workspace = true
 ring.workspace = true
 sha2.workspace = true
 chrono.workspace = true
+subtle = "2"
 
 [dev-dependencies]
 chrono = "0.4"

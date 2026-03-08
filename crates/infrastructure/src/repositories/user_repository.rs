@@ -53,12 +53,14 @@ impl UserRepository for SqliteUserRepository {
         .bind(&now)
         .fetch_one(self.pool.as_ref())
         .await
-        .map_err(|e| {
-            if e.to_string().contains("UNIQUE constraint") {
-                return DomainError::DuplicateUsername(username.to_string());
+        .map_err(|e| match &e {
+            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+                DomainError::DuplicateUsername(username.to_string())
             }
-            error!("Failed to create user: {e}");
-            DomainError::DatabaseError(e.to_string())
+            _ => {
+                error!("Failed to create user: {e}");
+                DomainError::DatabaseError(e.to_string())
+            }
         })?;
 
         info!(username = username, "User created in database");
@@ -153,12 +155,16 @@ impl UserRepository for SqliteUserRepository {
 }
 
 fn row_to_user(row: UserRow) -> User {
+    let role = UserRole::parse(&row.4).unwrap_or_else(|_| {
+        tracing::error!(role = row.4, "Invalid user role in database, defaulting to Viewer");
+        UserRole::Viewer
+    });
     User {
         id: Some(row.0),
         username: Arc::from(row.1.as_str()),
         display_name: row.2.map(|s| Arc::from(s.as_str())),
         password_hash: Arc::from(row.3.as_str()),
-        role: UserRole::parse(&row.4).unwrap_or(UserRole::Viewer),
+        role,
         source: UserSource::Database,
         enabled: row.5,
         created_at: Some(row.6),

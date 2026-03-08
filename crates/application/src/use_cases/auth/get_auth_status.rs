@@ -1,8 +1,7 @@
 use std::sync::Arc;
 use tracing::instrument;
 
-use crate::ports::SessionRepository;
-use ferrous_dns_domain::{AuthConfig, AuthSession, DomainError};
+use ferrous_dns_domain::AuthConfig;
 
 /// Returns authentication status info (no auth required to call).
 pub struct GetAuthStatusUseCase {
@@ -34,22 +33,8 @@ impl GetAuthStatusUseCase {
 /// Auth status returned to the frontend for login/setup flow.
 #[derive(Debug, Clone)]
 pub struct AuthStatus {
+    /// Whether authentication is globally enabled.
     pub auth_enabled: bool,
+    /// Whether the admin password has been set (first-run setup complete).
     pub password_configured: bool,
-}
-
-/// Lists all active (non-expired) browser sessions.
-pub struct GetActiveSessionsUseCase {
-    session_repo: Arc<dyn SessionRepository>,
-}
-
-impl GetActiveSessionsUseCase {
-    pub fn new(session_repo: Arc<dyn SessionRepository>) -> Self {
-        Self { session_repo }
-    }
-
-    #[instrument(skip(self))]
-    pub async fn execute(&self) -> Result<Vec<AuthSession>, DomainError> {
-        self.session_repo.get_all_active().await
-    }
 }

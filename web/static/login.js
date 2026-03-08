@@ -23,21 +23,25 @@ function loginApp() {
                     this.setupRequired = data.setup_required;
                 }
             } catch (e) {
-                console.error('Auth status check failed:', e);
+                this.error = 'Cannot connect to server';
+                scheduleLucide(100);
+                return;
             }
             // If already authenticated, redirect
             if (!this.setupRequired) {
-                const probe = await apiFetch(`${API_BASE}/health`);
-                if (probe.ok) {
-                    window.location.href = '/dashboard.html';
-                    return;
-                }
+                try {
+                    const probe = await apiFetch(`${API_BASE}/auth/sessions`);
+                    if (probe.ok) {
+                        window.location.href = '/dashboard.html';
+                        return;
+                    }
+                } catch (e) {}
             }
-            setTimeout(() => lucide.createIcons(), 100);
+            scheduleLucide(100);
         },
 
         async setupAdmin() {
-            if (!this.setupPassword || this.setupPassword !== this.setupConfirm) return;
+            if (!this.setupPassword || this.setupPassword.length < 8 || this.setupPassword !== this.setupConfirm) return;
             this.error = '';
             this.loading = true;
             try {
@@ -53,12 +57,13 @@ function loginApp() {
                     this.setupPassword = '';
                     this.setupConfirm = '';
                     await this.login();
+                    this.password = '';
                 } else {
                     const data = await res.json().catch(() => ({}));
                     this.error = data.error || 'Setup failed';
                 }
             } catch (e) {
-                this.error = 'Setup failed: ' + e.message;
+                this.error = 'Connection error. Please try again.';
             } finally {
                 this.loading = false;
             }
@@ -79,13 +84,14 @@ function loginApp() {
                     })
                 });
                 if (res.ok) {
+                    this.password = '';
                     window.location.href = '/dashboard.html';
                 } else {
                     const data = await res.json().catch(() => ({}));
                     this.error = data.error || 'Invalid username or password';
                 }
             } catch (e) {
-                this.error = 'Login failed: ' + e.message;
+                this.error = 'Connection error. Please try again.';
             } finally {
                 this.loading = false;
             }

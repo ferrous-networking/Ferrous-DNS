@@ -2,9 +2,9 @@ use axum::{
     extract::{Path, Request, State},
     http::{header, StatusCode},
     response::IntoResponse,
-    routing::{delete, get, post},
     Json, Router,
 };
+use axum::routing::{delete, get, post};
 use tracing::debug;
 
 use crate::dto::auth::{
@@ -14,7 +14,7 @@ use crate::dto::auth::{
 use crate::errors::ApiError;
 use crate::state::AppState;
 
-const SESSION_COOKIE_NAME: &str = "ferrous_session";
+pub const SESSION_COOKIE_NAME: &str = "ferrous_session";
 
 /// Routes that require authentication (behind require_auth middleware).
 pub fn protected_routes() -> Router<AppState> {
@@ -60,10 +60,17 @@ pub async fn login_public(
 
     let body = axum::body::to_bytes(request.into_body(), 1024 * 16)
         .await
-        .map_err(|_| ApiError(ferrous_dns_domain::DomainError::InvalidCredentials))?;
+        .map_err(|_| {
+            ApiError(ferrous_dns_domain::DomainError::InvalidInput(
+                "Invalid request body".to_string(),
+            ))
+        })?;
 
-    let req: LoginRequest = serde_json::from_slice(&body)
-        .map_err(|_| ApiError(ferrous_dns_domain::DomainError::InvalidCredentials))?;
+    let req: LoginRequest = serde_json::from_slice(&body).map_err(|_| {
+        ApiError(ferrous_dns_domain::DomainError::InvalidInput(
+            "Invalid request body".to_string(),
+        ))
+    })?;
 
     let session = state
         .auth
@@ -77,16 +84,10 @@ pub async fn login_public(
         )
         .await?;
 
-    let max_age = if req.remember_me {
-        let config = state.config.read().await;
-        i64::from(config.auth.remember_me_days) * 86400
-    } else {
-        let config = state.config.read().await;
-        i64::from(config.auth.session_ttl_hours) * 3600
-    };
+    let max_age = state.auth.login.session_max_age(req.remember_me);
 
     let cookie = format!(
-        "{SESSION_COOKIE_NAME}={}; HttpOnly; SameSite=Strict; Path=/; Max-Age={max_age}",
+        "{SESSION_COOKIE_NAME}={}; HttpOnly; SameSite=Strict; Secure; Path=/; Max-Age={max_age}",
         session.id
     );
 
@@ -97,7 +98,7 @@ pub async fn login_public(
         [(header::SET_COOKIE, cookie)],
         Json(LoginResponse {
             username: session.username.to_string(),
-            role: session.role.to_string(),
+            role: session.role.as_str().to_string(),
             expires_at: session.expires_at.clone(),
         }),
     );
@@ -112,7 +113,7 @@ pub async fn logout_public(State(state): State<AppState>, request: Request) -> i
     }
 
     let clear_cookie =
-        format!("{SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
+        format!("{SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Strict; Secure; Path=/; Max-Age=0");
 
     (StatusCode::NO_CONTENT, [(header::SET_COOKIE, clear_cookie)])
 }
@@ -134,13 +135,13 @@ async fn change_password(
     let body = axum::body::to_bytes(request.into_body(), 1024 * 16)
         .await
         .map_err(|_| {
-            ApiError(ferrous_dns_domain::DomainError::ConfigError(
+            ApiError(ferrous_dns_domain::DomainError::InvalidInput(
                 "Invalid request body".to_string(),
             ))
         })?;
 
     let req: ChangePasswordRequest = serde_json::from_slice(&body).map_err(|_| {
-        ApiError(ferrous_dns_domain::DomainError::ConfigError(
+        ApiError(ferrous_dns_domain::DomainError::InvalidInput(
             "Invalid request body".to_string(),
         ))
     })?;
@@ -166,7 +167,7 @@ async fn get_active_sessions(
             .map(|s| SessionResponse {
                 id: s.id.to_string(),
                 username: s.username.to_string(),
-                role: s.role.to_string(),
+                role: s.role.as_str().to_string(),
                 ip_address: s.ip_address.to_string(),
                 user_agent: s.user_agent.to_string(),
                 remember_me: s.remember_me,
@@ -187,7 +188,7 @@ async fn delete_session(
     Ok(StatusCode::NO_CONTENT)
 }
 
-fn extract_session_cookie(request: &Request) -> Option<String> {
+pub fn extract_session_cookie(request: &Request) -> Option<String> {
     let cookie_header = request.headers().get("cookie")?.to_str().ok()?;
     for part in cookie_header.split(';') {
         let trimmed = part.trim();

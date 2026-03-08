@@ -782,6 +782,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "subtle",
  "tokio",
  "tower",
  "tracing",
@@ -800,6 +801,7 @@ dependencies = [
  "hostname",
  "http-body-util",
  "libc",
+ "ring",
  "serde",
  "serde_json",
  "sqlx",
@@ -822,6 +824,7 @@ dependencies = [
  "lru",
  "ring",
  "sha2",
+ "subtle",
  "tokio",
  "tracing",
 ]

@@ -41,12 +41,14 @@ impl ApiTokenRepository for SqliteApiTokenRepository {
         .bind(&now)
         .fetch_one(self.pool.as_ref())
         .await
-        .map_err(|e| {
-            if e.to_string().contains("UNIQUE constraint") {
-                return DomainError::DuplicateApiTokenName(name.to_string());
+        .map_err(|e| match &e {
+            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+                DomainError::DuplicateApiTokenName(name.to_string())
             }
-            error!("Failed to create API token: {e}");
-            DomainError::DatabaseError(e.to_string())
+            _ => {
+                error!("Failed to create API token: {e}");
+                DomainError::DatabaseError(e.to_string())
+            }
         })?;
 
         info!(name = name, "API token created");

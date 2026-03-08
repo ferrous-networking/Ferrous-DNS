@@ -5,7 +5,7 @@ use sqlx::SqlitePool;
 use tracing::{error, instrument};
 
 use ferrous_dns_application::ports::SessionRepository;
-use ferrous_dns_domain::{AuthSession, DomainError};
+use ferrous_dns_domain::{AuthSession, DomainError, UserRole};
 
 pub struct SqliteSessionRepository {
     pool: Arc<SqlitePool>,
@@ -29,7 +29,7 @@ impl SessionRepository for SqliteSessionRepository {
         )
         .bind(session.id.as_ref())
         .bind(session.username.as_ref())
-        .bind(session.role.as_ref())
+        .bind(session.role.as_str())
         .bind(session.ip_address.as_ref())
         .bind(session.user_agent.as_ref())
         .bind(remember)
@@ -145,10 +145,14 @@ fn row_to_session(
         String,
     ),
 ) -> AuthSession {
+    let role = UserRole::parse(&row.2).unwrap_or_else(|_| {
+        tracing::error!(role = row.2, "Invalid session role in database, defaulting to Viewer");
+        UserRole::Viewer
+    });
     AuthSession {
         id: Arc::from(row.0.as_str()),
         username: Arc::from(row.1.as_str()),
-        role: Arc::from(row.2.as_str()),
+        role,
         ip_address: Arc::from(row.3.as_str()),
         user_agent: Arc::from(row.4.as_str()),
         remember_me: row.5 != 0,

@@ -168,6 +168,9 @@ pub enum DomainError {
     #[error("Password not configured, run initial setup")]
     PasswordNotConfigured,
 
+    #[error("Password already configured")]
+    PasswordAlreadyConfigured,
+
     #[error("API token not found: {0}")]
     ApiTokenNotFound(i64),
 
@@ -191,4 +194,7 @@ pub enum DomainError {
 
     #[error("Insufficient permissions")]
     InsufficientPermissions,
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
 }

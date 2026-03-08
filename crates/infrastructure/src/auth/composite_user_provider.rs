@@ -108,9 +108,9 @@ impl CompositeUserProvider {
                 .map_err(|e| DomainError::ConfigError(format!("Failed to save config: {e}")))?;
         }
 
+        let admin_config = config.auth.admin.clone();
         drop(config);
 
-        let admin_config = self.config.read().await.auth.admin.clone();
         let mut admin = self.toml_admin.write().await;
         *admin = TomlAdminProvider::new(admin_config);
 

@@ -22,7 +22,7 @@ pub fn routes() -> Router<AppState> {
 }
 
 async fn get_all_users(State(state): State<AppState>) -> Result<Json<Vec<UserResponse>>, ApiError> {
-    let users = state.auth.get_users.get_all().await?;
+    let users = state.auth.get_users.execute().await?;
     debug!(count = users.len(), "Users retrieved");
     Ok(Json(users.into_iter().map(user_to_response).collect()))
 }

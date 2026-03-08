@@ -44,6 +44,8 @@ fn extract_api_key(request: &Request) -> Option<String> {
         .map(String::from)
 }
 
+/// Constant-time byte comparison to prevent timing side-channels.
 pub fn timing_safe_eq(a: &[u8], b: &[u8]) -> bool {
-    a.len() == b.len() && a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+    use subtle::ConstantTimeEq;
+    a.ct_eq(b).into()
 }

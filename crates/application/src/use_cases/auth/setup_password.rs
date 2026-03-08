@@ -36,9 +36,7 @@ impl SetupPasswordUseCase {
 
         if let Some(ref u) = user {
             if !u.password_hash.is_empty() {
-                return Err(DomainError::ConfigError(
-                    "Password already configured".to_string(),
-                ));
+                return Err(DomainError::PasswordAlreadyConfigured);
             }
         }
 
