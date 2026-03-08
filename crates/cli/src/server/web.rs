@@ -147,6 +147,7 @@ fn create_app(
             get(block_services_css_handler),
         )
         .route("/static/block-services.js", get(block_services_js_handler))
+        .route("/static/login.css", get(login_css_handler))
         .route("/static/login.js", get(login_js_handler))
         .route("/", get(index_handler))
         .route("/login.html", get(login_handler))
@@ -325,4 +326,5 @@ js_handler!(
     block_services_js_handler,
     "../../../../web/static/block-services.js"
 );
+css_handler!(login_css_handler, "../../../../web/static/login.css");
 js_handler!(login_js_handler, "../../../../web/static/login.js");
