@@ -84,6 +84,33 @@ function apiFetch(url, options = {}) {
     return fetch(url, options);
 }
 
+// --- Auth guard ---
+
+async function checkAuth() {
+    try {
+        const res = await fetch(`${API_BASE}/auth/status`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.enabled) return;
+        // Auth is enabled — check if we have a valid session by probing a protected endpoint
+        const probe = await apiFetch(`${API_BASE}/health`);
+        if (probe.status === 401) {
+            window.location.href = '/login.html';
+        }
+    } catch (e) {
+        console.error('Auth check failed:', e);
+    }
+}
+
+async function logout() {
+    try {
+        await apiFetch(`${API_BASE}/auth/logout`, {method: 'POST'});
+    } catch (e) {
+        console.error('Logout error:', e);
+    }
+    window.location.href = '/login.html';
+}
+
 // --- Rate color using CSS custom properties ---
 
 function getRateColor(queryRate) {

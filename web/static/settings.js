@@ -54,11 +54,23 @@
             dashboardSessionKey: localStorage.getItem('ferrous_api_key') || '',
             dashboardAuthenticated: !!localStorage.getItem('ferrous_api_key'),
             alert: {show: false, type: 'success', message: ''},
+            // Security tab state
+            authConfig: {enabled: false, session_ttl_hours: 24, remember_me_days: 30, login_rate_limit_attempts: 5, login_rate_limit_window_secs: 300},
+            changePass: {current: '', newPassword: '', confirm: ''},
+            users: [],
+            showAddUser: false,
+            newUser: {username: '', password: '', role: 'viewer', display_name: ''},
+            apiTokens: [],
+            showCreateToken: false,
+            newTokenName: '',
+            generatedToken: '',
+            activeSessions: [],
             async init() {
                 this.theme = localStorage.getItem('theme') || 'light';
                 document.documentElement.classList.toggle('dark', this.theme === 'dark');
+                await checkAuth();
                 startRatePolling(rate => { this.queryRate = rate; });
-                await Promise.all([this.loadConfig(), this.loadDnsSettings(), this.loadHealthStatus(), this.loadCacheStats(), this.loadStats(), this.loadSystemStatus()]);
+                await Promise.all([this.loadConfig(), this.loadDnsSettings(), this.loadHealthStatus(), this.loadCacheStats(), this.loadStats(), this.loadSystemStatus(), this.loadAuthConfig(), this.loadUsers(), this.loadApiTokens(), this.loadActiveSessions()]);
                 scheduleLucide(100);
                 this.startPolling();
                 document.addEventListener('visibilitychange', () => {
@@ -412,6 +424,157 @@
                 if (!ms) return '0 ms';
                 if (ms < 1) return `${Math.round(ms * 1000)} µs`;
                 return `${ms.toFixed(1)} ms`;
+            },
+            // --- Security tab methods ---
+            async loadAuthConfig() {
+                try {
+                    const r = await apiFetch(`${API_BASE}/auth/status`);
+                    if (r.ok) {
+                        const data = await r.json();
+                        this.authConfig.enabled = data.enabled;
+                    }
+                } catch (e) { console.error('Load auth config:', e); }
+            },
+            async saveAuthConfig() {
+                try {
+                    const r = await apiFetch(`${API_BASE}/config`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({auth: {
+                            enabled: this.authConfig.enabled,
+                            session_ttl_hours: this.authConfig.session_ttl_hours,
+                            remember_me_days: this.authConfig.remember_me_days,
+                            login_rate_limit_attempts: this.authConfig.login_rate_limit_attempts,
+                            login_rate_limit_window_secs: this.authConfig.login_rate_limit_window_secs
+                        }})
+                    });
+                    if (r.ok) {
+                        this.showAlert('success', 'Authentication settings saved');
+                    } else {
+                        const data = await r.json().catch(() => ({}));
+                        this.showAlert('error', 'Failed: ' + (data.error || 'Unknown error'));
+                    }
+                } catch (e) { this.showAlert('error', 'Error: ' + e.message); }
+            },
+            async changePassword() {
+                if (!this.changePass.current || !this.changePass.newPassword || this.changePass.newPassword !== this.changePass.confirm) return;
+                try {
+                    const r = await apiFetch(`${API_BASE}/auth/password`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({current_password: this.changePass.current, new_password: this.changePass.newPassword})
+                    });
+                    if (r.ok || r.status === 204) {
+                        this.changePass = {current: '', newPassword: '', confirm: ''};
+                        this.showAlert('success', 'Password updated successfully');
+                    } else {
+                        const data = await r.json().catch(() => ({}));
+                        this.showAlert('error', data.error || 'Failed to change password');
+                    }
+                } catch (e) { this.showAlert('error', 'Error: ' + e.message); }
+            },
+            async loadUsers() {
+                try {
+                    const r = await apiFetch(`${API_BASE}/users`);
+                    if (r.ok) this.users = await r.json();
+                } catch (e) { console.error('Load users:', e); }
+            },
+            resetNewUser() {
+                this.newUser = {username: '', password: '', role: 'viewer', display_name: ''};
+            },
+            async createUser() {
+                if (!this.newUser.username || !this.newUser.password) return;
+                try {
+                    const r = await apiFetch(`${API_BASE}/users`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(this.newUser)
+                    });
+                    if (r.ok || r.status === 201) {
+                        this.showAddUser = false;
+                        this.resetNewUser();
+                        await this.loadUsers();
+                        this.showAlert('success', 'User created');
+                        scheduleLucide(50);
+                    } else {
+                        const data = await r.json().catch(() => ({}));
+                        this.showAlert('error', data.error || 'Failed to create user');
+                    }
+                } catch (e) { this.showAlert('error', 'Error: ' + e.message); }
+            },
+            async deleteUser(id) {
+                if (!confirm('Delete this user?')) return;
+                try {
+                    const r = await apiFetch(`${API_BASE}/users/${id}`, {method: 'DELETE'});
+                    if (r.ok || r.status === 204) {
+                        await this.loadUsers();
+                        this.showAlert('success', 'User deleted');
+                        scheduleLucide(50);
+                    } else {
+                        const data = await r.json().catch(() => ({}));
+                        this.showAlert('error', data.error || 'Failed to delete user');
+                    }
+                } catch (e) { this.showAlert('error', 'Error: ' + e.message); }
+            },
+            async loadApiTokens() {
+                try {
+                    const r = await apiFetch(`${API_BASE}/api-tokens`);
+                    if (r.ok) this.apiTokens = await r.json();
+                } catch (e) { console.error('Load API tokens:', e); }
+            },
+            async createApiToken() {
+                if (!this.newTokenName.trim()) return;
+                try {
+                    const r = await apiFetch(`${API_BASE}/api-tokens`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({name: this.newTokenName.trim()})
+                    });
+                    if (r.ok || r.status === 201) {
+                        const data = await r.json();
+                        this.generatedToken = data.token;
+                        this.showCreateToken = false;
+                        this.newTokenName = '';
+                        await this.loadApiTokens();
+                        scheduleLucide(50);
+                    } else {
+                        const data = await r.json().catch(() => ({}));
+                        this.showAlert('error', data.error || 'Failed to create token');
+                    }
+                } catch (e) { this.showAlert('error', 'Error: ' + e.message); }
+            },
+            async revokeApiToken(id) {
+                if (!confirm('Revoke this API token?')) return;
+                try {
+                    const r = await apiFetch(`${API_BASE}/api-tokens/${id}`, {method: 'DELETE'});
+                    if (r.ok || r.status === 204) {
+                        await this.loadApiTokens();
+                        this.showAlert('success', 'Token revoked');
+                        scheduleLucide(50);
+                    } else {
+                        const data = await r.json().catch(() => ({}));
+                        this.showAlert('error', data.error || 'Failed to revoke token');
+                    }
+                } catch (e) { this.showAlert('error', 'Error: ' + e.message); }
+            },
+            async loadActiveSessions() {
+                try {
+                    const r = await apiFetch(`${API_BASE}/auth/sessions`);
+                    if (r.ok) this.activeSessions = await r.json();
+                } catch (e) { console.error('Load sessions:', e); }
+            },
+            async revokeSession(id) {
+                if (!confirm('Revoke this session?')) return;
+                try {
+                    const r = await apiFetch(`${API_BASE}/auth/sessions/${id}`, {method: 'DELETE'});
+                    if (r.ok || r.status === 204) {
+                        await this.loadActiveSessions();
+                        this.showAlert('success', 'Session revoked');
+                    } else {
+                        const data = await r.json().catch(() => ({}));
+                        this.showAlert('error', data.error || 'Failed to revoke session');
+                    }
+                } catch (e) { this.showAlert('error', 'Error: ' + e.message); }
             },
             showAlert(type, msg) {
                 this.alert = {show: true, type, message: msg};

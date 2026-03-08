@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferrous DNS - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/shared.css">
+    <script src="/ferrous-config.js"></script>
+    <script src="/static/shared.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+    <style>
+        body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg-primary); font-family:'Inter',sans-serif; }
+        .login-card { width:100%; max-width:400px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:12px; padding:40px 32px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
+        .login-card h1 { font-size:24px; font-weight:700; color:var(--text-primary); margin:0 0 4px; text-align:center; }
+        .login-card .subtitle { font-size:13px; color:var(--text-secondary); margin:0 0 28px; text-align:center; }
+        .login-card .form-group { margin-bottom:16px; }
+        .login-card .form-label { display:block; font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
+        .login-card input[type="text"],
+        .login-card input[type="password"] { width:100%; padding:10px 12px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; background:var(--bg-primary); color:var(--text-primary); box-sizing:border-box; outline:none; transition:border-color .15s; }
+        .login-card input:focus { border-color:var(--color-primary); }
+        .login-card .remember-row { display:flex; align-items:center; gap:8px; margin-bottom:20px; font-size:13px; color:var(--text-secondary); }
+        .login-card .remember-row input[type="checkbox"] { accent-color:var(--color-primary); }
+        .login-btn { width:100%; padding:10px; border:none; border-radius:8px; background:var(--color-primary); color:#fff; font-size:14px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+        .login-btn:hover { opacity:0.9; }
+        .login-btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .error-msg { background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; font-size:13px; color:#991b1b; margin-bottom:16px; }
+        .dark .error-msg { background:#451a1a; border-color:#7f1d1d; color:#fca5a5; }
+        .setup-info { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 14px; font-size:13px; color:#1e40af; margin-bottom:16px; }
+        .dark .setup-info { background:#1e293b; border-color:#1e3a5f; color:#93c5fd; }
+    </style>
+</head>
+<body x-data="loginApp()" x-init="init()">
+
+<div class="login-card">
+    <div style="text-align:center;margin-bottom:20px">
+        <img src="/static/logo.svg" alt="Ferrous DNS" style="width:56px;height:56px;margin:0 auto">
+    </div>
+    <h1>Ferrous DNS</h1>
+    <p class="subtitle" x-text="setupRequired ? 'Set up your admin password' : 'Sign in to continue'"></p>
+
+    <!-- Setup mode (first-run) -->
+    <template x-if="setupRequired">
+        <div>
+            <div class="setup-info">
+                <i data-lucide="info" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"></i>
+                No password configured yet. Create your admin password to get started.
+            </div>
+            <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" x-model="setupPassword" placeholder="Minimum 8 characters"
+                       @keydown.enter="setupAdmin()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" x-model="setupConfirm" placeholder="Re-enter password"
+                       @keydown.enter="setupAdmin()">
+            </div>
+            <p x-show="setupPassword && setupConfirm && setupPassword !== setupConfirm" x-cloak
+               style="font-size:12px;color:#ef4444;margin-bottom:12px">Passwords do not match.</p>
+            <div x-show="error" x-cloak class="error-msg" x-text="error"></div>
+            <button class="login-btn" @click="setupAdmin()" :disabled="loading || !setupPassword || setupPassword !== setupConfirm">
+                <span x-show="!loading">Create Password</span>
+                <span x-show="loading">Setting up...</span>
+            </button>
+        </div>
+    </template>
+
+    <!-- Login mode -->
+    <template x-if="!setupRequired">
+        <div>
+            <div x-show="error" x-cloak class="error-msg" x-text="error"></div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" x-model="username" placeholder="admin" @keydown.enter="login()" autofocus>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" x-model="password" placeholder="Enter password" @keydown.enter="login()">
+            </div>
+            <div class="remember-row">
+                <input type="checkbox" id="remember" x-model="rememberMe">
+                <label for="remember">Remember me</label>
+            </div>
+            <button class="login-btn" @click="login()" :disabled="loading || !username || !password">
+                <span x-show="!loading">Sign In</span>
+                <span x-show="loading">Signing in...</span>
+            </button>
+        </div>
+    </template>
+</div>
+
+<script src="/static/login.js"></script>
+</body>
+</html>
