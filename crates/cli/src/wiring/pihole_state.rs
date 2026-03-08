@@ -76,5 +76,7 @@ pub fn build_pihole_state(
             process_start: std::time::Instant::now(),
         },
         api_key,
+        login: None,
+        admin_username: None,
     }
 }

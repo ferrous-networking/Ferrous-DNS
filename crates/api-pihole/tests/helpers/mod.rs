@@ -392,6 +392,8 @@ pub async fn create_pihole_test_app(pool: sqlx::SqlitePool, api_key: Option<&str
             process_start: std::time::Instant::now(),
         },
         api_key: api_key.map(Arc::from),
+        login: None,
+        admin_username: None,
     };
 
     create_pihole_routes(state)

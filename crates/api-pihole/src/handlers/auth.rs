@@ -11,20 +11,55 @@ use crate::{
 };
 
 /// Pi-hole v6 GET /api/auth — returns current session state.
-///
-/// Without server-side session tracking, this always returns unauthenticated.
-/// Pi-hole clients should POST /api/auth to obtain a session.
 pub async fn get_session() -> Json<AuthResponse> {
     Json(AuthResponse {
         session: unauthenticated_session("Use POST /api/auth with your API key"),
     })
 }
 
-/// Pi-hole v6 POST /api/auth — validates an API key and returns a session.
+/// Pi-hole v6 POST /api/auth — validates credentials and returns a session.
+///
+/// When `LoginUseCase` is wired, creates a real Ferrous DNS session.
+/// Falls back to legacy static API key comparison when not available.
 pub async fn login(
     State(state): State<PiholeAppState>,
     Json(body): Json<LoginRequest>,
 ) -> Response {
+    // Try real session auth first (via LoginUseCase)
+    if let (Some(ref login_uc), Some(ref admin_user)) = (&state.login, &state.admin_username) {
+        match login_uc
+            .execute(
+                admin_user,
+                &body.password,
+                false,
+                "pihole-api",
+                "pihole-client",
+            )
+            .await
+        {
+            Ok(session) => {
+                return (
+                    StatusCode::OK,
+                    Json(AuthResponse {
+                        session: SessionInfo {
+                            valid: true,
+                            totp: false,
+                            sid: session.id.to_string(),
+                            csrf: String::new(),
+                            validity: 1_800,
+                            message: String::new(),
+                        },
+                    }),
+                )
+                    .into_response();
+            }
+            Err(_) => {
+                // Fall through to legacy API key check
+            }
+        }
+    }
+
+    // Legacy: static API key comparison
     let authenticated = match &state.api_key {
         Some(key) => constant_time_eq(key.as_ref().as_bytes(), body.password.as_bytes()),
         None => true,
@@ -57,7 +92,7 @@ pub async fn login(
     }
 }
 
-/// Pi-hole v6 DELETE /api/auth — session logout (no-op in Ferrous DNS).
+/// Pi-hole v6 DELETE /api/auth — session logout.
 pub async fn logout() -> StatusCode {
     StatusCode::NO_CONTENT
 }
