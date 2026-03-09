@@ -122,6 +122,7 @@ struct SourceLoad {
     default_group_id: i64,
     sources: Vec<SourceMeta>,
     url_tasks: Vec<(u8, String)>,
+    all_group_ids: Vec<i64>,
 }
 
 async fn load_sources(pool: &SqlitePool) -> Result<SourceLoad, DomainError> {
@@ -188,33 +189,45 @@ async fn load_sources(pool: &SqlitePool) -> Result<SourceLoad, DomainError> {
         })
         .collect();
 
+    // Load ALL group IDs so every group gets a mask entry (even if no blocklists)
+    let all_group_ids: Vec<i64> = sqlx::query("SELECT id FROM groups")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+        .iter()
+        .map(|row| row.get::<i64, _>("id"))
+        .collect();
+
     Ok(SourceLoad {
         default_group_id,
         sources,
         url_tasks,
+        all_group_ids,
     })
 }
 
 fn build_group_masks(
     sources: &[SourceMeta],
     default_group_id: i64,
+    all_group_ids: &[i64],
 ) -> (SourceBitSet, HashMap<i64, SourceBitSet>) {
-    let mut default_mask: SourceBitSet = MANUAL_SOURCE_BIT;
-    for src in sources {
-        if src.group_id == default_group_id {
-            default_mask |= 1u64 << src.bit;
-        }
+    // Pre-populate ALL groups with MANUAL_SOURCE_BIT only (global manual blocklist).
+    // Each group is independent — no inheritance from default.
+    let mut group_masks: HashMap<i64, SourceBitSet> = HashMap::with_capacity(all_group_ids.len());
+    for &gid in all_group_ids {
+        group_masks.insert(gid, MANUAL_SOURCE_BIT);
     }
 
-    let mut group_masks: HashMap<i64, SourceBitSet> = HashMap::new();
-    group_masks.insert(default_group_id, default_mask);
-
+    // Add each source's bit ONLY to its assigned group
     for src in sources {
-        if src.group_id != default_group_id {
-            let entry = group_masks.entry(src.group_id).or_insert(default_mask);
-            *entry |= 1u64 << src.bit;
-        }
+        let entry = group_masks.entry(src.group_id).or_insert(MANUAL_SOURCE_BIT);
+        *entry |= 1u64 << src.bit;
     }
+
+    let default_mask = group_masks
+        .get(&default_group_id)
+        .copied()
+        .unwrap_or(MANUAL_SOURCE_BIT);
 
     (default_mask, group_masks)
 }
@@ -458,9 +471,10 @@ pub async fn compile_block_index(
         default_group_id,
         sources,
         url_tasks,
+        all_group_ids,
     } = load_sources(pool).await?;
 
-    let (_, group_masks) = build_group_masks(&sources, default_group_id);
+    let (_, group_masks) = build_group_masks(&sources, default_group_id, &all_group_ids);
     let source_entries = fetch_sources_parallel(url_tasks, client).await;
     let manual_domains = load_manual_domains(pool).await?;
     let managed_domain_entries = load_managed_domains_for_index(pool).await?;
@@ -524,7 +538,6 @@ pub async fn compile_block_index(
 
     Ok(BlockIndex {
         group_masks,
-        default_group_id,
         total_blocked_domains: total_exact,
         exact,
         bloom,

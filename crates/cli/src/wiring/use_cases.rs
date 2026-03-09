@@ -153,7 +153,10 @@ impl UseCases {
                 repos.client.clone(),
                 repos.group.clone(),
             )),
-            update_client: Arc::new(UpdateClientUseCase::new(repos.client.clone())),
+            update_client: Arc::new(
+                UpdateClientUseCase::new(repos.client.clone())
+                    .with_block_filter(repos.block_filter_engine.clone()),
+            ),
             delete_client: Arc::new(DeleteClientUseCase::new(repos.client.clone())),
             get_blocklist_sources: Arc::new(GetBlocklistSourcesUseCase::new(
                 repos.blocklist_source.clone(),
