@@ -357,11 +357,7 @@ pub fn save_config_to_file(config: &Config, path: &str) -> Result<(), ConfigErro
             "dot_max_connections_per_ip",
             toml_edit::Value::from(config.dns.rate_limit.dot_max_connections_per_ip as i64),
         );
-        set_val(
-            rl,
-            "whitelist",
-            str_array(&config.dns.rate_limit.whitelist),
-        );
+        set_val(rl, "whitelist", str_array(&config.dns.rate_limit.whitelist));
     }
 
     // ── [blocking] ──────────────────────────────────────────────────────
