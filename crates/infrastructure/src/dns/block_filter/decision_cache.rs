@@ -75,9 +75,7 @@ pub fn decision_l0_get_by_key(key: u64) -> Option<Option<BlockSource>> {
     BLOCK_L0.with(|c| {
         let mut c = c.borrow_mut();
         if let Some(&(encoded, inserted_at, epoch)) = c.get(&key) {
-            if epoch == current_epoch
-                && coarse_now_secs().saturating_sub(inserted_at) < TTL_SECS
-            {
+            if epoch == current_epoch && coarse_now_secs().saturating_sub(inserted_at) < TTL_SECS {
                 return Some(decode_source(encoded));
             }
             c.pop(&key);
@@ -90,8 +88,10 @@ pub fn decision_l0_get_by_key(key: u64) -> Option<Option<BlockSource>> {
 pub fn decision_l0_set_by_key(key: u64, source: Option<BlockSource>) {
     let current_epoch = DECISION_EPOCH.load(Ordering::Acquire);
     BLOCK_L0.with(|c| {
-        c.borrow_mut()
-            .put(key, (encode_source(source), coarse_now_secs(), current_epoch));
+        c.borrow_mut().put(
+            key,
+            (encode_source(source), coarse_now_secs(), current_epoch),
+        );
     });
 }
 

@@ -206,11 +206,7 @@ async fn load_sources(pool: &SqlitePool) -> Result<SourceLoad, DomainError> {
     })
 }
 
-fn build_group_masks(
-    sources: &[SourceMeta],
-    default_group_id: i64,
-    all_group_ids: &[i64],
-) -> (SourceBitSet, HashMap<i64, SourceBitSet>) {
+fn build_group_masks(sources: &[SourceMeta], all_group_ids: &[i64]) -> HashMap<i64, SourceBitSet> {
     // Pre-populate ALL groups with MANUAL_SOURCE_BIT only (global manual blocklist).
     // Each group is independent — no inheritance from default.
     let mut group_masks: HashMap<i64, SourceBitSet> = HashMap::with_capacity(all_group_ids.len());
@@ -224,12 +220,7 @@ fn build_group_masks(
         *entry |= 1u64 << src.bit;
     }
 
-    let default_mask = group_masks
-        .get(&default_group_id)
-        .copied()
-        .unwrap_or(MANUAL_SOURCE_BIT);
-
-    (default_mask, group_masks)
+    group_masks
 }
 
 async fn fetch_sources_parallel(
@@ -474,7 +465,7 @@ pub async fn compile_block_index(
         all_group_ids,
     } = load_sources(pool).await?;
 
-    let (_, group_masks) = build_group_masks(&sources, default_group_id, &all_group_ids);
+    let group_masks = build_group_masks(&sources, &all_group_ids);
     let source_entries = fetch_sources_parallel(url_tasks, client).await;
     let manual_domains = load_manual_domains(pool).await?;
     let managed_domain_entries = load_managed_domains_for_index(pool).await?;

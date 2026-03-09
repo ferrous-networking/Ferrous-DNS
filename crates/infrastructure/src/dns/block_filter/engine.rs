@@ -66,7 +66,7 @@ impl BlockFilterEngine {
             .map_err(|e| DomainError::BlockFilterCompileError(e.to_string()))?;
 
         let engine = Arc::new(Self {
-            index: ArcSwap::from_pointee(BlockIndex::empty(default_group_id)),
+            index: ArcSwap::from_pointee(BlockIndex::empty()),
             decision_cache: BlockDecisionCache::new(),
             client_groups: Arc::new(DashMap::with_hasher(FxBuildHasher)),
             subnet_matcher: ArcSwap::from_pointee(None),

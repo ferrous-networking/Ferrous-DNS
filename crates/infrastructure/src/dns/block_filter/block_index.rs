@@ -79,7 +79,7 @@ pub struct BlockIndex {
 }
 
 impl BlockIndex {
-    pub fn empty(_default_group_id: i64) -> Self {
+    pub fn empty() -> Self {
         Self {
             group_masks: HashMap::new(),
             total_blocked_domains: 0,
